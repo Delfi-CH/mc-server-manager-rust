@@ -1,24 +1,29 @@
+use std::fmt::Error;
 use std::io::{self, Write};
 use std::fs;
 use std::path::Path;
-//use std::process::Command;
+use std::env;
+use std::process::Command;
 //use json::stringify;
 use std::process::exit;
+use std::ptr::read;
+use os_info::get;
 
-fn main() {
+fn main() -> ! {
     println!("Welcome to the CLI MC-Server Management");
     println!("What would you like to do?");
     println!();
     println!("Actions: ");
     println!("abort: Exits the Application");
     println!("add: Adds a Server via a JSON File");
+    println!("exit: Exits the Application");
+    println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
     println!("install: Install a Server from the Internet");
     println!("help: Lists all Actions");
     println!("start: Start a Server");
-    println!();
 
     loop {
-        print!("Input a Keyword: ");
+        print!("> ");
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
@@ -27,7 +32,8 @@ fn main() {
             .read_line(&mut input)
             .expect("Could not read the Input");
 
-        let input = input.trim();  // Trim whitespace and newline
+        let input= input.to_lowercase();
+        let input = input.trim();
 
         match input {
             "abort" => {
@@ -37,6 +43,14 @@ fn main() {
             "add" => {
                 add_server();
             }
+            "exit" =>{
+                println!("Exiting application.");
+                exit(0); 
+            }
+            "init" =>{
+                check_os();
+                init();
+            }
             "install" => {
                 println!("install: not yet implemented");
             }
@@ -45,10 +59,11 @@ fn main() {
                 println!("Actions: ");
                 println!("abort: Exits the Application");
                 println!("add: Adds a Server via a JSON File");
+                println!("exit: Exits the Application");
+                println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
                 println!("install: Install a Server from the Internet");
                 println!("help: Lists all Actions");
                 println!("start: Start a Server");
-                println!();
             }
             "start" => {
                 println!("start: not yet implemented");
@@ -59,6 +74,7 @@ fn main() {
             }
             "iwantaneasteregg" => {
                 open::that("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+                exit(69);
             }
             _ => {
                 println!("{} is not a valid Action", input);
@@ -95,7 +111,6 @@ fn add_server() {
             match fs::read_to_string(path) {
                 Ok(contents_string) => {
                     println!("File is JSON");
-                    // You can parse JSON here or do whatever you want with contents_string
                     break;
                 }
                 Err(e) => {
@@ -108,7 +123,6 @@ fn add_server() {
         }
     }
 }
-    //println!("test");
 
     /* let output = if cfg!(target_os = "windows") {
         Command::new("cmd")
@@ -127,5 +141,22 @@ fn add_server() {
     println!("Command Output: {}", hello.trim());
 
     */
+fn init() {
+    match fs::read("app.cfg") {
+        Ok(_) => {
+            println!("Found app.cfg");
+        }
+        Err(_) => {
+            println!("app.cfg wasn't found, creating it...");
+            match fs::write("app.cfg", "") {
+                Ok(_) => println!("app.cfg created successfully."),
+                Err(e) => println!("Failed to create app.cfg: {}", e),
+            }
+        }
+    }
+}
 
-
+fn check_os(){
+ let info = os_info::get();
+ println!("OS information: {info}");
+}

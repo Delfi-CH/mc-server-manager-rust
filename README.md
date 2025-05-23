@@ -8,4 +8,5 @@ NOT ALL FEATURES ARE IMPLEMENTED
 
 ## Exit Codes
 
-- Exit Code 0: User terminated the Application 
+- Exit Code 0: User terminated the Application.
+- Exit Code 69: Something funny happend.
