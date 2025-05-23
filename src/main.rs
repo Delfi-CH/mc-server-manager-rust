@@ -2,6 +2,7 @@
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::Path;
+use std::io::prelude::*;
 //use std::process::Command;
 //use json::stringify;
 use std::process::exit;
@@ -192,9 +193,19 @@ fn new_cfg(){
 }
 
 fn read_cfg() {
-    match fs::read("app.cfg") {
-        Ok(_) => {
-            println!("app.cfg found");
+    match File::open("app.cfg") {
+        Ok(mut app_cfg) => {
+            let mut app_cfg_content = String::new();
+            if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
+                eprintln!("Error reading file: {}", e);
+                return;
+            }
+            println!();
+            println!("Contents of app.cfg:");
+            println!("-----------------------");
+            println!("{}", app_cfg_content);
+            println!("-----------------------");
+            println!();
         }
         Err(_) => {
             println!("app.cfg not found!");
