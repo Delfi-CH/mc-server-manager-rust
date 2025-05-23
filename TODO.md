@@ -3,6 +3,7 @@
 ## Stage 1 (Rust)
 
 Basic Functionallity
+(Launching, Stopping, etc)
 
 ## Stage 2 (Rust)
 
