@@ -1,5 +1,5 @@
 //use std::fmt::Error;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::Path;
 //use std::process::Command;
@@ -19,6 +19,7 @@ fn main() {
     println!("install: Install a Server from the Internet");
     println!("help: Lists all Actions");
     println!("newcfg: Generates a new app.cfg");
+    println!("readcfg: reads the current app.cfg");
     println!("start: Start a Server");
 
     loop {
@@ -62,6 +63,7 @@ fn main() {
                 println!("install: Install a Server from the Internet");
                 println!("help: Lists all Actions");
                 println!("newcfg: Generates a new app.cfg");
+                println!("readcfg: reads the current app.cfg");
                 println!("start: Start a Server");
             }
             "start" => {
@@ -69,6 +71,9 @@ fn main() {
             }
             "newcfg" =>{
                 new_cfg();
+            }
+            "readcfg" => {
+                read_cfg();
             }
             "easteregg" => {
                 println!("You expected to find an Easter Egg here, didn't you?");
@@ -156,6 +161,8 @@ fn init() {
             cfg_file.write_all(
             check_os().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            println!("Servers: 0");
+            println!("Finished!");
         }
     }
 }
@@ -170,13 +177,51 @@ fn new_cfg(){
             let mut cfg_file = File::create("app.cfg").expect("Could not create file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            println!("Servers: 0");
+            println!("Finished!");
         }
         Err(_) => {
             println!("app.cfg wasn't found, creating it...");
             let mut cfg_file = File::create("app.cfg").expect("Could not create file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0")
+            println!("Servers: 0");
+            println!("Finished!");
+        }
+    }
+}
+
+fn read_cfg() {
+    match fs::read("app.cfg") {
+        Ok(_) => {
+            println!("app.cfg found");
+        }
+        Err(_) => {
+            println!("app.cfg not found!");
+            println!();
+            println!("Would you like to generate a new app.cfg? (y/n)");
+            print!("> ");
+            io::stdout().flush().unwrap();
+
+            let mut read_cfg_yn = String::new();
+
+            io::stdin()
+            .read_line(&mut read_cfg_yn)
+            .expect("Could not read the Input");
+
+            let read_cfg_yn= read_cfg_yn.to_lowercase();
+            let read_cfg_yn = read_cfg_yn.trim();
+            
+            if read_cfg_yn == "y" {
+                println!("Creating new app.cfg...");
+                let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+                cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+                cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+                println!("Servers: 0");
+                println!("Finished!");
+            } else {
+                println!("Aborting...");
+            }
         }
     }
 }
