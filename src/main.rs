@@ -21,6 +21,7 @@ fn main() {
     println!("newcfg: Generates a new app.cfg");
     println!("readcfg: reads the current app.cfg");
     println!("start: Start a Server");
+    println!("startjar: Start a Server from a .jar file");
 
     loop {
         print!("> ");
@@ -65,9 +66,13 @@ fn main() {
                 println!("newcfg: Generates a new app.cfg");
                 println!("readcfg: reads the current app.cfg");
                 println!("start: Start a Server");
+                println!("startjar: Start a Server from a .jar file");
             }
             "start" => {
                 println!("start: not yet implemented");
+            }
+            "startjar" => {
+                start_manual();
             }
             "newcfg" =>{
                 new_cfg();
@@ -241,4 +246,30 @@ fn check_os() -> String {
     let os_info = format!("OS: {}\n", info);
     println!("OS information: {}", os_info);
     os_info
+}
+
+fn start_manual() {
+    io::stdout().flush().unwrap();
+
+    println!("Please enter the path to your server.jar");
+    print!("> ");
+
+    let mut path_to_jar = String::new();
+
+    io::stdin()
+        .read_line(&mut path_to_jar)
+        .expect("Could not read the Input");
+
+    let path_to_jar= path_to_jar.to_lowercase();
+    let path_to_jar = path_to_jar.trim();
+
+    match fs::read(path_to_jar) {
+        Ok(_) => {
+            println!("path is real");
+        }
+        Err(_) => {
+            println!("path is false");
+        }
+
+}
 }
