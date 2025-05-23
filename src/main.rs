@@ -2,7 +2,6 @@
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::Path;
-use std::io::prelude::*;
 //use std::process::Command;
 //use json::stringify;
 use std::process::exit;
@@ -119,7 +118,7 @@ fn add_server() {
 
         if filetype == Some("json") {
             match fs::read_to_string(path) {
-                Ok(contents_string) => {
+                Ok(_contents_string) => {
                     println!("File is JSON");
                     break;
                 }
@@ -173,7 +172,7 @@ fn new_cfg(){
         Ok(_) => {
             println!("Found app.cfg");
             println!("Removing app.cfg...");
-            fs::remove_file("app.cfg");
+            fs::remove_file("app.cfg").expect("Could not delete file");
             println!("Creating new app.cfg...");
             let mut cfg_file = File::create("app.cfg").expect("Could not create file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
