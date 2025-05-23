@@ -1,12 +1,10 @@
-use std::fmt::Error;
+//use std::fmt::Error;
 use std::io::{self, Write};
 use std::fs::{self, File};
 use std::path::Path;
 //use std::process::Command;
 //use json::stringify;
 use std::process::exit;
-use std::ptr::read;
-use os_info::get;
 
 fn main() {
 
@@ -155,7 +153,9 @@ fn init() {
         Err(_) => {
             println!("app.cfg wasn't found, creating it...");
             let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all(
+            check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
         }
     }
 }
@@ -169,11 +169,14 @@ fn new_cfg(){
             println!("Creating new app.cfg...");
             let mut cfg_file = File::create("app.cfg").expect("Could not create file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
         }
         Err(_) => {
             println!("app.cfg wasn't found, creating it...");
             let mut cfg_file = File::create("app.cfg").expect("Could not create file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            println!("Servers: 0")
         }
     }
 }
