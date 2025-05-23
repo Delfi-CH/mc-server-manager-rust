@@ -1,15 +1,15 @@
 use std::fmt::Error;
 use std::io::{self, Write};
-use std::fs;
+use std::fs::{self, File};
 use std::path::Path;
-use std::env;
-use std::process::Command;
+//use std::process::Command;
 //use json::stringify;
 use std::process::exit;
 use std::ptr::read;
 use os_info::get;
 
-fn main() -> ! {
+fn main() {
+
     println!("Welcome to the CLI MC-Server Management");
     println!("What would you like to do?");
     println!();
@@ -20,6 +20,7 @@ fn main() -> ! {
     println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
     println!("install: Install a Server from the Internet");
     println!("help: Lists all Actions");
+    println!("newcfg: Generates a new app.cfg");
     println!("start: Start a Server");
 
     loop {
@@ -48,7 +49,6 @@ fn main() -> ! {
                 exit(0); 
             }
             "init" =>{
-                check_os();
                 init();
             }
             "install" => {
@@ -63,18 +63,24 @@ fn main() -> ! {
                 println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
                 println!("install: Install a Server from the Internet");
                 println!("help: Lists all Actions");
+                println!("newcfg: Generates a new app.cfg");
                 println!("start: Start a Server");
             }
             "start" => {
                 println!("start: not yet implemented");
+            }
+            "newcfg" =>{
+                new_cfg();
             }
             "easteregg" => {
                 println!("You expected to find an Easter Egg here, didn't you?");
                 println!("Fine, if you really want one, type iwantaneasteregg as an action.");
             }
             "iwantaneasteregg" => {
-                open::that("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-                exit(69);
+                if let Err(e) = open::that("https://www.youtube.com/watch?v=dQw4w9WgXcQ") {
+                eprintln!("Failed to open browser: {}", e);
+                }
+                exit(69)
             }
             _ => {
                 println!("{} is not a valid Action", input);
@@ -148,15 +154,33 @@ fn init() {
         }
         Err(_) => {
             println!("app.cfg wasn't found, creating it...");
-            match fs::write("app.cfg", "") {
-                Ok(_) => println!("app.cfg created successfully."),
-                Err(e) => println!("Failed to create app.cfg: {}", e),
-            }
+            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
         }
     }
 }
 
-fn check_os(){
- let info = os_info::get();
- println!("OS information: {info}");
+fn new_cfg(){
+    match fs::read("app.cfg") {
+        Ok(_) => {
+            println!("Found app.cfg");
+            println!("Removing app.cfg...");
+            fs::remove_file("app.cfg");
+            println!("Creating new app.cfg...");
+            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+        }
+        Err(_) => {
+            println!("app.cfg wasn't found, creating it...");
+            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+        }
+    }
+}
+
+fn check_os() -> String {
+    let info = os_info::get();
+    let os_info = format!("OS: {}\n", info);
+    println!("OS information: {}", os_info);
+    os_info
 }
