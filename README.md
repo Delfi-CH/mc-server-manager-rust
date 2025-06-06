@@ -59,4 +59,10 @@ Supported Java Runtimes:
     On Windows: [How to edit Enviroment Variables](https://www.google.com/search?q=how+to+edit+environment+variables+in+windows&sca_esv=87b41ab4477c98ab&sxsrf=AE3TifOTess3olJYauutliwMR8rU_Ub-yA%3A1749203581729&source=hp&ei=fbpCaKWsKrSI9u8Pr5_muQ8&iflsig=AOw8s4IAAAAAaELIjZ9Uqyh4psKbgFDI_4vq5JbJ5PAs&ved=0ahUKEwjl3oGRw9yNAxU0hP0HHa-POfcQ4dUDCBk&uact=5&oq=how+to+edit+environment+variables+in+windows&gs_lp=Egdnd3Mtd2l6Iixob3cgdG8gZWRpdCBlbnZpcm9ubWVudCB2YXJpYWJsZXMgaW4gd2luZG93czIIEAAYgAQYywEyCBAAGIAEGMsBMggQABiABBjLATIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgUQABjvBTIIEAAYgAQYogQyBRAAGO8FSJoDUABYAHAAeACQAQCYAUCgAUCqAQExuAEDyAEA-AEC-AEBmAIBoAJImAMAkgcBMaAHmQeyBwExuAdIwgcDMy0xyAcI&sclient=gws-wiz)
 
     On Linux, run:
+    
+    
+        which java
 
+    If it returns a valid Path, please make an Issue
+
+    If it doenst (re-) install Java
