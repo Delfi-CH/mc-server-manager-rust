@@ -1,20 +1,27 @@
 # TODO
 
-## Stage 1 (Rust)
+## STAGE 1 
 
-Basic Functionallity
-(Launching, Stopping, etc)
+Make a CLI Tool for the basic functions
 
-## Stage 2 (Rust)
+NO Multithreading + NO WebUI
 
-JSON Decoder
+## Stage 2
 
-Config file
+Make the CLI Tool into a CLI-App and a Libary and Multithread it
 
--- Arguments
+Make Backend Entry for WebUI
 
-## Stage 3 (Rust + JS)
+## Stage 3
 
-WebUI in JS
+Make WebUI in JS
 
-Lauch script (eg. start.bat / start.sh)
+## Stage 4
+
+Make Packages (exe, deb, rpm, etc.)
+
+Make Website with GH-Pages
+ 
+Make Easy Installer for Windows, Debian / Ubuntu, Fedora /RHEl
+
+Make Docker Image
