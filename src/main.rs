@@ -15,7 +15,7 @@ fn main() {
     println!("Actions: ");
     println!("abort: Exits the Application");
     println!("add: Adds a Server via a JSON File");
-    println!("check: Checks your OS and JDK for compatability");
+    println!("check: Checks if Java is installed on the System");
     println!("exit: Exits the Application");
     println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
     println!("install: Install a Server from the Internet");
@@ -65,7 +65,7 @@ fn main() {
                 println!("Actions: ");
                 println!("abort: Exits the Application");
                 println!("add: Adds a Server via a JSON File");
-                println!("check: Checks your OS and JDK for compatability");
+                println!("check: Checks if Java is installed on the System");
                 println!("exit: Exits the Application");
                 println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
                 println!("install: Install a Server from the Internet");
