@@ -8,7 +8,7 @@ NO Multithreading + NO WebUI
 
 ## Stage 2
 
-Make the CLI Tool into a CLI-App and a Libary
+Make the CLI Tool into a CLI-App and a Libary and Multithread it
 
 Make Backend Entry for WebUI
 
@@ -21,5 +21,7 @@ Make WebUI in JS
 Make Packages (exe, deb, rpm, etc.)
 
 Make Website with GH-Pages
+ 
+Make Easy Installer for Windows, Debian / Ubuntu, Fedora /RHEl
 
-Make Easy Installer
+Make Docker Image
