@@ -405,7 +405,6 @@ fn start_manual() {
 
         match fs::read(path_to_jar) {
             Ok(_) => {
-                println!("Path is Valid.");
 
                 let java = check_java_silent();
 
@@ -426,6 +425,23 @@ fn start_manual() {
                         };
                         //Does all the EULA Stuff
                         let mut agree_eula = false;
+
+                        let eula_path_buf = {
+                        let eula_path = Path::new(path_to_jar);
+                        match eula_path.parent() {
+                            Some(parent) => parent.join("eula.txt"),
+                            None => {
+                         println!("Could not find EULA.txt.");
+                        continue;
+                        }
+                    }
+                    };
+
+                    let eula_contents = fs::read_to_string(&eula_path_buf)
+                        .expect("Should have been able to read the file");
+                    if eula_contents.contains("eula = true") {
+                        agree_eula = true;
+                    } else {
                         while agree_eula == false {
                         println!("Do you agree to the Minecraft EULA?");
                         println!("https://www.minecraft.net/en-us/eula");
@@ -453,6 +469,7 @@ fn start_manual() {
                             println!("Not a valid Input");
                         }
                     }
+                }
                     if agree_eula == true {
 
                         let eula_path = command_path.join("eula.txt");
@@ -479,8 +496,24 @@ fn start_manual() {
                                 break;
                             }
                     } else {
-                        //Does all the EULA Stuff
                         let mut agree_eula = false;
+
+                        let eula_path_buf = {
+                        let eula_path = Path::new(path_to_jar);
+                        match eula_path.parent() {
+                            Some(parent) => parent.join("eula.txt"),
+                            None => {
+                         println!("Could not find EULA.txt.");
+                        continue;
+                        }
+                    }
+                    };
+
+                    let eula_contents = fs::read_to_string(&eula_path_buf)
+                        .expect("Should have been able to read the file");
+                    if eula_contents.contains("eula = true") {
+                        agree_eula = true;
+                    } else {
                         while agree_eula == false {
                         println!("Do you agree to the Minecraft EULA?");
                         println!("https://www.minecraft.net/en-us/eula");
@@ -508,6 +541,7 @@ fn start_manual() {
                             println!("Not a valid Input");
                         }
                     }
+                }
                         if agree_eula == true {
                         let command_path_jar = Path::new(path_to_jar);
 
