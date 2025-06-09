@@ -106,17 +106,20 @@ Supported Java Runtimes:
   **Arch  Linux:**
   
    ```bash
-  pacman -Syu jdk-openjdk
+  sudo pacman -Syu jdk-openjdk
   ```
   Verify the Installation by running
     ```bash
   java -version
   ```
 
-  **Arch  Linux:**
+  **Alpine  Linux:**
   
    ```bash
-  pacman -Syu jdk-openjdk
+   sudo apk update
+   sudo apk upgrade
+   sudo apk search openjdk
+   sudo apk add openjdk[PREFERED-VERSION-HERE]
   ```
   Verify the Installation by running
     ```bash
@@ -125,7 +128,9 @@ Supported Java Runtimes:
   **openSUSE:**
   
    ```bash
-  add stuff here
+  sudo zypper refresh
+  sudo zypper search openjdk
+  sudo zypper install java-[PREFERED-VERSION-HERE]-openjdk
   ```
   Verify the Installation by running
     ```bash
