@@ -21,18 +21,18 @@ x86-64 based Processor (Intel/Amd)
 
 #### Linux: 
 
-#### Debian-based:
+#### **Debian-based:**
 - Ubuntu 24.04 or higher
 - Debian 12 or higher
 
 
-#### RedHat-based
+#### **RedHat-based:**
 
 - Fedora 42 or higher
 - RHEL 9 or higher
 - "RHEL-Clone (Oracle Linux, AlmaLinux, etc..)" compatible with RHEL 9 or higher
 
-#### Other Linux Distributions:
+#### **Other Linux Distributions:**
 
 - Alpine Linux
 - Arch Linux
@@ -113,7 +113,7 @@ Supported Java Runtimes:
   java -version
   ```
 
-  **Alpine  Linux:**
+  **Alpine Linux:**
   
    ```bash
    sudo apk update
