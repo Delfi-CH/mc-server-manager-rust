@@ -4,6 +4,7 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 //use json::stringify;
+use dir::home_dir;
 use std::process::exit;
 
 fn main() {
@@ -24,7 +25,6 @@ fn main() {
     println!("source: Opens Git Repository in your default Browser");
     println!("start: Start a Server");
     println!("startjar: Start a Server from a .jar file");
-    
 
     loop {
         print!("> ");
@@ -676,4 +676,20 @@ fn download_server() {
         println!("Not a valid Input");
         }
         }
+
+    if agree_eula == true{
+        let mut download_path: PathBuf = home_dir().expect("Could not find home directory");
+        download_path.push("Downloads/server.jar");
+        println!("Downloading server.jar ...");
+        //needs testing on linux
+        let output = Command::new("curl")
+        .args(&[
+        "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar",
+        "-o",
+        download_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("Failed to download File");
+        println!("Finished!");
+    }
         }
