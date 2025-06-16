@@ -478,10 +478,34 @@ fn start_manual() {
 
                         println!("Running server in directory: {}", command_path.display());
 
-                        let output = Command::new("java")
+                        //Add Maximum and Minimum Mem here
+
+                        println!("Set the minimum mmount of RAM for the Server in MB");
+                        print!("-> ");
+                        io::stdout().flush().unwrap();
+
+
+                        let mut min_mem_input = String::new();
+                        io::stdin().read_line(&mut min_mem_input).unwrap();
+                        let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
+
+                        println!("Set the maximum amount of RAM for the Server in MB");
+                        print!("-> ");
+                        io::stdout().flush().unwrap();
+
+                        let mut max_mem_input = String::new();
+                        io::stdin().read_line(&mut max_mem_input).unwrap();
+                        let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
+
+                        let xms_arg = format!("-Xms{}M", min_mem_int);
+                        let xmx_arg = format!("-Xmx{}M", max_mem_int);
+                        
+
+
+                            let output = Command::new("java")
                             .args(&[
-                                "-Xmx1024M",
-                                "-Xms1024M",
+                                &xms_arg,
+                                &xmx_arg,
                                 "-jar",
                                 command_path_jar.to_str().unwrap(),
                                 "nogui",
@@ -489,6 +513,8 @@ fn start_manual() {
                             .current_dir(&command_path)
                             .output()
                             .expect("Failed to start Server");
+
+                        println!("Running: java {} {} -jar {} nogui", xmx_arg, xms_arg, path_to_jar);
 
                         let server_log = String::from_utf8_lossy(&output.stderr);
                         println!("{}", server_log);
@@ -559,10 +585,34 @@ fn start_manual() {
 
                         println!("Running server in directory: {}", command_path.display());
 
-                        let output = Command::new("java")
+                        //Add Maximum and Minimum Mem here
+
+                        println!("Set the minimum mmount of RAM for the Server in MB");
+                        print!("-> ");
+                        io::stdout().flush().unwrap();
+
+
+                        let mut min_mem_input = String::new();
+                        io::stdin().read_line(&mut min_mem_input).unwrap();
+                        let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
+
+                        println!("Set the maximum amount of RAM for the Server in MB");
+                        print!("-> ");
+                        io::stdout().flush().unwrap();
+
+                        let mut max_mem_input = String::new();
+                        io::stdin().read_line(&mut max_mem_input).unwrap();
+                        let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
+
+                        let xms_arg = format!("-Xms{}M", min_mem_int);
+                        let xmx_arg = format!("-Xmx{}M", max_mem_int);
+                        
+
+
+                            let output = Command::new("java")
                             .args(&[
-                                "-Xmx1024M",
-                                "-Xms1024M",
+                                &xms_arg,
+                                &xmx_arg,
                                 "-jar",
                                 command_path_jar.to_str().unwrap(),
                                 "nogui",
@@ -570,6 +620,8 @@ fn start_manual() {
                             .current_dir(&command_path)
                             .output()
                             .expect("Failed to start Server");
+
+                        println!("Running: java {} {} -jar {} nogui", xmx_arg, xms_arg, path_to_jar);
 
                         let server_log = String::from_utf8_lossy(&output.stderr);
                         println!("{}", server_log);

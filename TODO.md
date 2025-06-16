@@ -9,7 +9,7 @@ NO Multithreading + NO WebUI
 ### Features
 
 - Agree to eula .txt [DONE]
-- Set Min and Max Ram
+- Set Min and Max Ram [DONE]
 - Rewrite start_manual into 2 Functions
 - JSON and app.cfg parsing
 
