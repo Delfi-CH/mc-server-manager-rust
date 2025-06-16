@@ -6,6 +6,13 @@ Make a CLI Tool for the basic functions
 
 NO Multithreading + NO WebUI
 
+### Features
+
+- Agree to eula .txt [DONE]
+- Set Min and Max Ram [DONE]
+- Rewrite start_manual into 2 Functions
+- JSON and app.cfg parsing
+
 ## Stage 2
 
 Make the CLI Tool into a CLI-App and a Libary and Multithread it
