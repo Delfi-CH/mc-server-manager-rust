@@ -150,3 +150,7 @@ Supported Java Runtimes:
   java -version
   ```
 -   in a Terminal
+
+## Legal
+
+THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
