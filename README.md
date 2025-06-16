@@ -6,11 +6,20 @@ CURRENTLY WORK IN PROGRESS!
 DO NOT USE
 NOT ALL FEATURES ARE IMPLEMENTED
 
-## Reqierments
+## Requirements
 
 ### Processor:
 
 x86-64 based Processor (Intel/Amd)
+
+### RAM:
+
+Minimum Amount of RAM needed to run the Operating System
+(eg. Fedora 42 -> 2 Gigabytes) plus Minimum Amount of RAM needed for Minecraft: Java Edition Server -> 1 Gigabyte
+
+Minimum: 4 Gigabytes
+
+Recommended: 8 Gigabytes and more.
 
 ### Operating Systems
 
@@ -89,29 +98,20 @@ Supported Java Runtimes:
    sudo apt upgrade
    sudo apt install default-jdk
   ```
-  Verify the Installation by running
-  ```bash
-  java -version
-  ```
+
   **Fedora, RHEL and "RHEL-Clones":**
   
    ```bash
   sudo dnf update
   sudo dnf install java
   ```
-  Verify the Installation by running
-    ```bash
-  java -version
-  ```
+
   **Arch  Linux:**
   
    ```bash
   sudo pacman -Syu jdk-openjdk
   ```
-  Verify the Installation by running
-    ```bash
-  java -version
-  ```
+
 
   **Alpine Linux:**
   
@@ -121,10 +121,7 @@ Supported Java Runtimes:
    sudo apk search openjdk
    sudo apk add openjdk[PREFERED-VERSION-HERE]
   ```
-  Verify the Installation by running
-    ```bash
-  java -version
-  ```
+
   **openSUSE:**
   
    ```bash
@@ -132,7 +129,9 @@ Supported Java Runtimes:
   sudo zypper search openjdk
   sudo zypper install java-[PREFERED-VERSION-HERE]-openjdk
   ```
-  Verify the Installation by running
+
+
+  **Verify the Installation by running**
     ```bash
   java -version
   ```
