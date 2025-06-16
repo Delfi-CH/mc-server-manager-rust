@@ -58,7 +58,7 @@ fn main() {
                 init();
             }
             "install" => {
-                println!("install: not yet implemented");
+                download_server();
             }
             "help" => {
                 println!("Actions: ");
@@ -445,7 +445,7 @@ fn start_manual() {
                         while agree_eula == false {
                         println!("Do you agree to the Minecraft EULA?");
                         println!("https://www.minecraft.net/en-us/eula");
-                        println!("y/n/open");
+                        println!("y/n/show");
                         print!("-> ");
                         io::stdout().flush().unwrap();
 
@@ -543,7 +543,7 @@ fn start_manual() {
                         while agree_eula == false {
                         println!("Do you agree to the Minecraft EULA?");
                         println!("https://www.minecraft.net/en-us/eula");
-                        println!("y/n/open");
+                        println!("y/n/show");
                         print!("-> ");
                         io::stdout().flush().unwrap();
 
@@ -644,3 +644,36 @@ fn start_manual() {
     //TODO: EVERYTHING    
     return true;
 }*/
+
+fn download_server() {
+    let mut agree_eula = false;
+    println!("Do you want to download the official Minecraft server.jar from https://www.minecraft.net/en-us/download/server?");
+    println!("Note, by downloading the server.jar, you automaticly agree to the Minecraft EULA");
+    while agree_eula == false {
+        println!("Do you agree to the Minecraft EULA?");
+        println!("https://www.minecraft.net/en-us/eula");
+        println!("y/n/show");
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+                        
+        let mut agree_eula_input = String::new();
+
+        io::stdin()
+        .read_line(&mut agree_eula_input)
+        .expect("Could not read the Input");
+        let agree_eula_input = agree_eula_input.trim().to_lowercase();
+                        
+        if agree_eula_input == "y" {
+            agree_eula = true;
+        } else if agree_eula_input == "n" {
+            break;
+        } else if agree_eula_input == "open" {
+            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
+            eprintln!("Failed to open browser: {}", e);
+            }
+        } else {
+        println!("Not a valid Input");
+        }
+        }
+        }
