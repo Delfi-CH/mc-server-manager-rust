@@ -17,12 +17,12 @@ fn main() {
     println!("add: Adds a Server via a JSON File");
     println!("check: Checks if Java is installed on the System");
     println!("exit: Exits the Application");
-    println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
-    println!("install: Install a Server from the Internet");
+    println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
+    println!("install: Download and install a Server from the Internet");
     println!("help: Lists all Actions");
-    println!("newcfg: Generates a new app.cfg");
-    println!("readcfg: reads the current app.cfg");
-    println!("source: Opens Git Repository in your default Browser");
+    println!("newcfg: Generates a new config.toml");
+    println!("readcfg: Reads the current config.toml and prints them");
+    println!("source: Opens the projects Git Repository in your default Browser");
     println!("start: Start a Server");
     println!("startjar: Start a Server from a .jar file");
 
@@ -61,19 +61,19 @@ fn main() {
                 download_server();
             }
             "help" => {
-                println!("Actions: ");
-                println!("abort: Exits the Application");
-                println!("add: Adds a Server via a JSON File");
-                println!("check: Checks your OS and JDK for compatability");
-                println!("exit: Exits the Application");
-                println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
-                println!("install: Install a Server from the Internet");
-                println!("help: Lists all Actions");
-                println!("newcfg: Generates a new app.cfg");
-                println!("readcfg: reads the current app.cfg");
-                println!("source: Opens Git Repository in your default Browser");
-                println!("start: Start a Server");
-                println!("startjar: Start a Server from a .jar file");
+				println!("Actions: ");
+				println!("abort: Exits the Application");
+				println!("add: Adds a Server via a JSON File");
+				println!("check: Checks if Java is installed on the System");
+				println!("exit: Exits the Application");
+				println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
+				println!("install: Download and install a Server from the Internet");
+				println!("help: Lists all Actions");
+				println!("newcfg: Generates a new config.toml");
+				println!("readcfg: Reads the current config.toml and prints them");
+				println!("source: Opens the projects Git Repository in your default Browser");
+				println!("start: Start a Server");
+				println!("startjar: Start a Server from a .jar file");
             }
             "start" => {
                 println!("start: not yet implemented");
@@ -149,59 +149,40 @@ fn add_server() {
     }
 }
 
-    /* let output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(["/C", "echo hello"])
-            .output()
-            .expect("Failed to execute process")
-    } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg("echo hello")
-            .output()
-            .expect("Failed to execute process")
-    };
-
-    let hello = String::from_utf8_lossy(&output.stdout);
-    println!("Command Output: {}", hello.trim());
-
-    */
 fn init() {
-    match fs::read("app.cfg") {
+    match fs::read("config.toml") {
         Ok(_) => {
-            println!("Found app.cfg");
+            println!("Found config.toml");
         }
         Err(_) => {
-            println!("app.cfg wasn't found, creating it...");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(
-            check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0");
-            println!("Finished!");
+            new_cfg();
         }
     }
 }
 
 fn new_cfg(){
-    match fs::read("app.cfg") {
+    match fs::read("config.toml") {
         Ok(_) => {
-            println!("Found app.cfg");
-            println!("Removing app.cfg...");
-            fs::remove_file("app.cfg").expect("Could not delete file");
-            println!("Creating new app.cfg...");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            println!("Found config.toml");
+            println!("Removing config.toml...");
+            fs::remove_file("config.toml").expect("Could not delete file");
+            println!("Creating new config.toml...");
+            let mut cfg_file = File::create("config.toml").expect("Could not create file");
+            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0");
             println!("Finished!");
         }
         Err(_) => {
-            println!("app.cfg wasn't found, creating it...");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            println!("config.toml wasn't found, creating it...");
+            let mut cfg_file = File::create("config.toml").expect("Could not create file");
+            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0");
             println!("Finished!");
         }
     }
@@ -209,23 +190,29 @@ fn new_cfg(){
 
 fn new_cfg_silent(){
     // same as fn new_cfg, but doesnt print output
-    match fs::read("app.cfg") {
+    match fs::read("config.toml") {
         Ok(_) => {
-            fs::remove_file("app.cfg").expect("Could not delete file");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            fs::remove_file("config.toml").expect("Could not delete file");
+            let mut cfg_file = File::create("config.toml").expect("Could not create file");
+            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
         }
         Err(_) => {
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
+            let mut cfg_file = File::create("config.toml").expect("Could not create file");
+            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
+            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
             cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
+            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
             cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
         }
     }
 }
 
 fn read_cfg() {
-    match File::open("app.cfg") {
+    match File::open("config.toml") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
             if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
@@ -233,16 +220,16 @@ fn read_cfg() {
                 return;
             }
             println!();
-            println!("Contents of app.cfg:");
+            println!("Contents of config.toml:");
             println!("-----------------------");
             println!("{}", app_cfg_content);
             println!("-----------------------");
             println!();
         }
         Err(_) => {
-            println!("app.cfg not found!");
+            println!("config.toml not found!");
             println!();
-            println!("Would you like to generate a new app.cfg? (y/n)");
+            println!("Would you like to generate a new config.toml? (y/n)");
             print!("-> ");
             io::stdout().flush().unwrap();
 
@@ -256,12 +243,7 @@ fn read_cfg() {
             let read_cfg_yn = read_cfg_yn.trim();
             
             if read_cfg_yn == "y" {
-                println!("Creating new app.cfg...");
-                let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-                cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-                cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-                println!("Servers: 0");
-                println!("Finished!");
+                new_cfg();
             } else {
                 println!("Aborting...");
             }
@@ -271,7 +253,7 @@ fn read_cfg() {
 fn read_cfg_silent() -> String {
 
     // same as fn read_cfg, but doesnt print output
-    match File::open("app.cfg") {
+    match File::open("config.toml") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
             if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
@@ -282,8 +264,6 @@ fn read_cfg_silent() -> String {
             }
         }
         Err(_) => {
-            println!("app.cfg not found!");
-            println!("Generating new app.cfg...");
             new_cfg_silent();
             let return_error_statement = "rerun";
             return return_error_statement.to_string();        
@@ -294,8 +274,22 @@ fn read_cfg_silent() -> String {
 fn check_os() -> String {
     let info = os_info::get();
     let os_info = format!("OS: {}\n", info);
-    //println!("OS information: {}", os_info);
     os_info
+}
+
+fn check_os_mini() -> String {
+    //Works the same as check_os, but writes a short name (e.g. win, linux)
+    let info = os_info::get();
+
+
+    let os_mini = if info.to_string().contains("Windows") {
+        "win"
+    } else {
+        "unix"
+    };
+
+    let os_info_mini = format!("OS-Mini: {}\n", os_mini);
+    os_info_mini
 }
 
 fn check_java() -> (String, bool) {
