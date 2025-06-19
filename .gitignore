@@ -1,4 +1,5 @@
 /target
 app.cfg
+config.toml
 /testing
 /.idea
