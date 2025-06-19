@@ -149,6 +149,11 @@ Supported Java Runtimes:
 - Q: Is this affiliated or endorsed by Mojang / Microsoft?
 - A: No, this Software is not affiliated, endorsed or connected to Mojang  and/or Microsoft.
 
+
+## Compiling it yourself
+
+See
+
 ## Legal
 
 THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
