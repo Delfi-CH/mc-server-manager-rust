@@ -144,12 +144,10 @@ Supported Java Runtimes:
 
 ## FAQ
 
-- Q: I have Java installed, but i get "Java wasn't found or is missing!"
-- A: Check if Java is in your PATH variable. You can do this by typing
-    ```bash
-  java -version
-  ```
--   in a Terminal
+- Q: I have Java installed, but i get something like "Java wasn't found or is missing!"
+- A: Check if Java is in your PATH variable. You can do this by running ```java -version```in a Terminal
+- Q: Is this affiliated or endorsed by Mojang / Microsoft?
+- A: No, this Software is not affiliated, endorsed or connected to Mojang  and/or Microsoft.
 
 ## Legal
 
