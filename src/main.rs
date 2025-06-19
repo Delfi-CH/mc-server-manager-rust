@@ -428,7 +428,7 @@ fn start_manual() {
         let mut path_to_jar = String::new();
         io::stdin()
             .read_line(&mut path_to_jar)
-            .expect("Could not read the Input");
+            .expect("Could not read the input");
 
         let path_to_jar = path_to_jar.trim();
 
@@ -436,248 +436,113 @@ fn start_manual() {
             break;
         }
 
-
         match fs::read(path_to_jar) {
             Ok(_) => {
-
-                let java = check_java_silent();
-
-                pathsearch = false;
-
-                if java {
-                    let os_type = check_os();
-
-                    if os_type.to_lowercase().contains("windows") {
-                        let command_path_jar = Path::new(path_to_jar);
-
-                        let command_path: PathBuf = match command_path_jar.parent() {
-                            Some(parent) => parent.to_path_buf(),
-                            None => {
-                                println!("Could not determine the directory of the jar file.");
-                                continue;
-                            }
-                        };
-                        //Does all the EULA Stuff
-                        let mut agree_eula = false;
-
-                        let eula_path_buf = {
-                        let eula_path = Path::new(path_to_jar);
-                        match eula_path.parent() {
-                            Some(parent) => parent.join("eula.txt"),
-                            None => {
-                         println!("Could not find EULA.txt.");
-                        continue;
-                        }
-                    }
-                    };
-
-                    let eula_contents = fs::read_to_string(&eula_path_buf)
-                        .expect("Should have been able to read the file");
-                    if eula_contents.contains("eula = true") {
-                        agree_eula = true;
-                    } else {
-                        while agree_eula == false {
-                        println!("Do you agree to the Minecraft EULA?");
-                        println!("https://www.minecraft.net/en-us/eula");
-                        println!("y/n/show");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        
-                        let mut agree_eula_input = String::new();
-
-                        io::stdin()
-                            .read_line(&mut agree_eula_input)
-                            .expect("Could not read the Input");
-                        let agree_eula_input = agree_eula_input.trim().to_lowercase();
-                        
-                        if agree_eula_input == "y" {
-                            agree_eula = true;
-                        } else if agree_eula_input == "n" {
-                            break;
-                        } else if agree_eula_input == "open" {
-                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
-                            eprintln!("Failed to open browser: {}", e);
-                            }
-                        } else {
-                            println!("Not a valid Input");
-                        }
-                    }
-                }
-                    if agree_eula == true {
-
-                        let eula_path = command_path.join("eula.txt");
-
-                        let _eula = fs::write(eula_path, "eula = true");
-
-                        println!("Running server in directory: {}", command_path.display());
-
-                        //Add Maximum and Minimum Mem here
-
-                        println!("Set the minimum mmount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-
-                        let mut min_mem_input = String::new();
-                        io::stdin().read_line(&mut min_mem_input).unwrap();
-                        let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
-
-                        println!("Set the maximum amount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        let mut max_mem_input = String::new();
-                        io::stdin().read_line(&mut max_mem_input).unwrap();
-                        let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
-
-                        let xms_arg = format!("-Xms{}M", min_mem_int);
-                        let xmx_arg = format!("-Xmx{}M", max_mem_int);
-                        
-
-
-                            let output = Command::new("java")
-                            .args(&[
-                                &xms_arg,
-                                &xmx_arg,
-                                "-jar",
-                                command_path_jar.to_str().unwrap(),
-                                "nogui",
-                            ])
-                            .current_dir(&command_path)
-                            .output()
-                            .expect("Failed to start Server");
-
-                        println!("Running: java {} {} -jar {} nogui", xmx_arg, xms_arg, path_to_jar);
-
-                        let server_log = String::from_utf8_lossy(&output.stderr);
-                        println!("{}", server_log);
-                            } else {
-                                break;
-                            }
-                    } else {
-                        let mut agree_eula = false;
-
-                        let eula_path_buf = {
-                        let eula_path = Path::new(path_to_jar);
-                        match eula_path.parent() {
-                            Some(parent) => parent.join("eula.txt"),
-                            None => {
-                         println!("Could not find EULA.txt.");
-                        continue;
-                        }
-                    }
-                    };
-
-                    let eula_contents = fs::read_to_string(&eula_path_buf)
-                        .expect("Should have been able to read the file");
-                    if eula_contents.contains("eula = true") {
-                        agree_eula = true;
-                    } else {
-                        while agree_eula == false {
-                        println!("Do you agree to the Minecraft EULA?");
-                        println!("https://www.minecraft.net/en-us/eula");
-                        println!("y/n/show");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        
-                        let mut agree_eula_input = String::new();
-
-                        io::stdin()
-                            .read_line(&mut agree_eula_input)
-                            .expect("Could not read the Input");
-                        let agree_eula_input = agree_eula_input.trim().to_lowercase();
-                        
-                        if agree_eula_input == "y" {
-                            agree_eula = true;
-                        } else if agree_eula_input == "n" {
-                            break;
-                        } else if agree_eula_input == "open" {
-                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
-                            eprintln!("Failed to open browser: {}", e);
-                            }
-                        } else {
-                            println!("Not a valid Input");
-                        }
-                    }
-                }
-                        if agree_eula == true {
-                        let command_path_jar = Path::new(path_to_jar);
-
-                        let command_path: PathBuf = match command_path_jar.parent() {
-                            Some(parent) => parent.to_path_buf(),
-                            None => {
-                                println!("Could not determine the directory of the jar file.");
-                                continue;
-                            }
-                        };
-                        
-                        let eula_path = command_path.join("eula.txt");
-
-                        let _eula = fs::write(eula_path, "eula = true");
-
-                        println!("Running server in directory: {}", command_path.display());
-
-                        //Add Maximum and Minimum Mem here
-
-                        println!("Set the minimum mmount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-
-                        let mut min_mem_input = String::new();
-                        io::stdin().read_line(&mut min_mem_input).unwrap();
-                        let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
-
-                        println!("Set the maximum amount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        let mut max_mem_input = String::new();
-                        io::stdin().read_line(&mut max_mem_input).unwrap();
-                        let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
-
-                        let xms_arg = format!("-Xms{}M", min_mem_int);
-                        let xmx_arg = format!("-Xmx{}M", max_mem_int);
-                        
-
-
-                            let output = Command::new("java")
-                            .args(&[
-                                &xms_arg,
-                                &xmx_arg,
-                                "-jar",
-                                command_path_jar.to_str().unwrap(),
-                                "nogui",
-                            ])
-                            .current_dir(&command_path)
-                            .output()
-                            .expect("Failed to start Server");
-
-                        println!("Running: java {} {} -jar {} nogui", xmx_arg, xms_arg, path_to_jar);
-
-                        let server_log = String::from_utf8_lossy(&output.stderr);
-                        println!("{}", server_log);
-                        } else {
-                            break;
-                        }
-                    }
-                } else {
+                if !check_java_silent() {
                     println!("Java wasn't found or is missing!");
+                    continue;
                 }
+
+                let command_path_jar = Path::new(path_to_jar);
+                let command_path = match command_path_jar.parent() {
+                    Some(parent) => parent.to_path_buf(),
+                    None => {
+                        println!("Could not determine the directory of the jar file.");
+                        continue;
+                    }
+                };
+
+                let eula_path = command_path.join("eula.txt");
+                let mut agree_eula = false;
+
+                if let Ok(contents) = fs::read_to_string(&eula_path) {
+                    if contents.contains("eula = true") {
+                        agree_eula = true;
+                    }
+                }
+
+                while !agree_eula {
+                    println!("Do you agree to the Minecraft EULA?");
+                    println!("https://www.minecraft.net/en-us/eula");
+                    println!("y/n/open");
+                    print!("-> ");
+                    io::stdout().flush().unwrap();
+
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).unwrap();
+                    let input = input.trim().to_lowercase();
+
+                    match input.as_str() {
+                        "y" => agree_eula = true,
+                        "n" => break,
+                        "open" => {
+                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
+                                eprintln!("Failed to open browser: {}", e);
+                            }
+                        }
+                        _ => println!("Not a valid input"),
+                    }
+                }
+
+                if !agree_eula {
+                    break;
+                }
+
+                // Write agreement
+                let _ = fs::write(&eula_path, "eula = true");
+
+                println!("Set the minimum amount of RAM for the Server in MB");
+                print!("-> ");
+                io::stdout().flush().unwrap();
+                let mut min_mem_input = String::new();
+                io::stdin().read_line(&mut min_mem_input).unwrap();
+                let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
+
+                println!("Set the maximum amount of RAM for the Server in MB");
+                print!("-> ");
+                io::stdout().flush().unwrap();
+                let mut max_mem_input = String::new();
+                io::stdin().read_line(&mut max_mem_input).unwrap();
+                let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
+
+                println!(
+                    "Running: java -Xms{}M -Xmx{}M -jar {} nogui",
+                    min_mem_int,
+                    max_mem_int,
+                    path_to_jar
+                );
+
+                start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula);
+                
+                pathsearch = false;
             }
             Err(_) => {
-                println!("Path does not lead to a valid .jar File");
+                println!("Path does not lead to a valid .jar file.");
             }
         }
     }
 }
 
-/*fn start_generic(path: &Path, mem_min: i32, mem_max: i32, eula: bool) -> bool {
-    //TODO: EVERYTHING    
+fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool) -> bool {
+if eula == true {
+    let xms_arg = format!("-Xms{}M", mem_min);
+    let xmx_arg = format!("-Xmx{}M", mem_max);
+
+    let output = Command::new("java")
+        .args([
+        xms_arg,
+        xmx_arg,
+        "-jar".to_string(),
+        jar_path.to_str().unwrap().to_string(),
+        "nogui".to_string(),
+        ])
+        .current_dir(&command_path)
+        .output()
+        .expect("Failed to start Server");
+
     return true;
-}*/
+} else {return false;}
+}
 
 fn download_server() {
     let mut agree_eula = false;
@@ -715,7 +580,6 @@ fn download_server() {
         let mut download_path: PathBuf = home_dir().expect("Could not find home directory");
         download_path.push("Downloads/server.jar");
         println!("Downloading server.jar ...");
-        //needs testing on linux
         let output = Command::new("curl")
         .args(&[
         "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar",
