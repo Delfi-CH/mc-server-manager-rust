@@ -152,7 +152,7 @@ Supported Java Runtimes:
 
 ## Compiling it yourself
 
-See
+See [here](https://github.com/Delfi-CH/mc-server-management/blob/main/COMPILING.md)
 
 ## Legal
 
