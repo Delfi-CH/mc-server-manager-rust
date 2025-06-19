@@ -10,8 +10,9 @@ NO Multithreading + NO WebUI
 
 - Agree to eula .txt [DONE]
 - Set Min and Max Ram [DONE]
+- Rework config file from app.cfg to config.toml
 - Rewrite start_manual into 2 Functions
-- JSON and app.cfg parsing
+- JSON and config.toml parsing
 
 ## Stage 2
 
