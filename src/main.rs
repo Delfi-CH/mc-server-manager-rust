@@ -168,21 +168,41 @@ fn new_cfg(){
             fs::remove_file("config.toml").expect("Could not delete file");
             println!("Creating new config.toml...");
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
-            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            cfg_file
+                .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[system]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
             println!("Finished!");
         }
         Err(_) => {
             println!("config.toml wasn't found, creating it...");
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
-            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            cfg_file
+                .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[system]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
             println!("Finished!");
         }
     }
@@ -194,19 +214,39 @@ fn new_cfg_silent(){
         Ok(_) => {
             fs::remove_file("config.toml").expect("Could not delete file");
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
-            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            cfg_file
+                .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[system]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
         }
         Err(_) => {
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
-            cfg_file.write_all("# Config for mc-server-management".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("[system]".as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all(check_os_mini().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            cfg_file
+                .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[system]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
         }
     }
 }
