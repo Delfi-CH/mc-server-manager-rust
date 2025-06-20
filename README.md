@@ -140,7 +140,7 @@ Supported Java Runtimes:
 
 ## Configuration
 
-For configuring the app, we use TOML (Tom's Obvious Minimal Language). You can read more about it [here](https://toml.io/)
+For configuring the app, TOML (Tom's Obvious Minimal Language) is beeing used. You can read more about it [here](https://toml.io/)
 
 ## FAQ
 
@@ -157,3 +157,9 @@ See [here](https://github.com/Delfi-CH/mc-server-management/blob/main/COMPILING.
 ## Legal
 
 THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
+
+This program is licensed under the terms of the GNU General Public License Version 3.
+For more information, please visit https://www.gnu.org/licenses/gpl-3.0
+However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.
+These functions require agreeing to the Minecraft End User License Agreement (EULA).
+For more information, please visit https://www.minecraft.net/en-us/eula.
