@@ -15,17 +15,19 @@ fn main() {
     println!();
     println!("Actions: ");
     println!("abort: Exits the Application");
+    println!("about: Shows Information about the Application");
     println!("add: Adds a Server via a TOML File");
     println!("check: Checks if Java is installed on the System");
-    println!("exit: Exits the Application");
-    println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
-    println!("install: Download and install a Server from the Internet");
-    println!("help: Lists all Actions");
-    println!("newcfg: Generates a new config.toml");
-    println!("readcfg: Reads the current config.toml and prints them");
-    println!("source: Opens the projects Git Repository in your default Browser");
-    println!("start: Start a Server");
-    println!("startjar: Start a Server from a .jar file");
+	println!("exit: Exits the Application");
+	println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
+	println!("install: Download and install a server.jar from the Internet");
+	println!("help: Lists all Actions");
+    println!("license: Shows all Information about licensing.");
+	println!("newcfg: Generates a new config.toml");
+	println!("readcfg: Reads the current config.toml and prints them");
+	println!("source: Opens the projects Git Repository in your default Browser");
+	println!("start: Start a Server");
+	println!("startjar: Start a Server from a .jar file");
 
     loop {
         print!("> ");
@@ -120,7 +122,11 @@ fn main() {
             "license" => {
                 println!();
                 println!("This program is licensed under the terms of the GNU General Public License Version 3.");
-
+                println!("For more information, please visit https://www.gnu.org/licenses/gpl-3.0");
+                println!("However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.");
+                println!("These functions require agreeing to the Minecraft End User License Agreement (EULA).");
+                println!("For more information, please visit https://www.minecraft.net/en-us/eula.");
+                println!();
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
