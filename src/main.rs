@@ -9,6 +9,8 @@ use std::process::exit;
 
 fn main() {
 
+    init_silent();
+
     println!("Welcome to the CLI MC-Server Management");
     println!("What would you like to do?");
     println!();
@@ -153,6 +155,17 @@ fn init() {
     match fs::read("config.toml") {
         Ok(_) => {
             println!("Found config.toml");
+        }
+        Err(_) => {
+            new_cfg();
+        }
+    }
+}
+
+fn init_silent() {
+    match fs::read("config.toml") {
+        Ok(_) => {
+            return;
         }
         Err(_) => {
             new_cfg();
@@ -528,7 +541,7 @@ if eula == true {
     let xms_arg = format!("-Xms{}M", mem_min);
     let xmx_arg = format!("-Xmx{}M", mem_max);
 
-    let output = Command::new("java")
+    Command::new("java")
         .args([
         xms_arg,
         xmx_arg,
@@ -580,7 +593,7 @@ fn download_server() {
         let mut download_path: PathBuf = home_dir().expect("Could not find home directory");
         download_path.push("Downloads/server.jar");
         println!("Downloading server.jar ...");
-        let output = Command::new("curl")
+        Command::new("curl")
         .args(&[
         "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar",
         "-o",
