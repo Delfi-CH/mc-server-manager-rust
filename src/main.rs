@@ -144,8 +144,15 @@ fn add_server() {
                         eprintln!("Error reading file: {}", e);
                         break;
                     } else {
-                        println!("{}", toml_file_read);
-                        break;
+
+                        if toml_file_read.contains("[server_config]") {
+                            println!("File is a vaild Server configuration file.");
+                            break;
+                        } else {
+                            println!("File is not a vaild Server configuration file!");
+                            println!("Try again");
+                            continue;
+                        }
                     }
                 }
                 Err(e) => {
@@ -182,7 +189,7 @@ fn init_silent() {
             return;
         }
         Err(_) => {
-            new_cfg();
+            new_cfg_silent();
         }
     }
 }
@@ -194,42 +201,12 @@ fn new_cfg(){
             println!("Removing config.toml...");
             fs::remove_file("config.toml").expect("Could not delete file");
             println!("Creating new config.toml...");
-            let mut cfg_file = File::create("config.toml").expect("Could not create file");
-            cfg_file
-                .write_all("# Config for mc-server-management\n\n".as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all("[system]\n".as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all("servers = 0\n".as_bytes())
-                .expect("Could not write to file");
+            new_cfg_silent();
             println!("Finished!");
         }
         Err(_) => {
             println!("config.toml wasn't found, creating it...");
-            let mut cfg_file = File::create("config.toml").expect("Could not create file");
-            cfg_file
-                .write_all("# Config for mc-server-management\n\n".as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all("[system]\n".as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all("servers = 0\n".as_bytes())
-                .expect("Could not write to file");
+            new_cfg_silent();
             println!("Finished!");
         }
     }
@@ -256,6 +233,15 @@ fn new_cfg_silent(){
             cfg_file
                 .write_all("servers = 0\n".as_bytes())
                 .expect("Could not write to file");
+            cfg_file
+                .write_all("after_initial_setup = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[storage]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("use_default_server_dir = false\n".as_bytes())
+                .expect("Could not write to file");
         }
         Err(_) => {
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
@@ -273,6 +259,15 @@ fn new_cfg_silent(){
                 .expect("Could not write to file");
             cfg_file
                 .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("after_initial_setup = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[storage]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("use_default_server_dir = false\n".as_bytes())
                 .expect("Could not write to file");
         }
     }
