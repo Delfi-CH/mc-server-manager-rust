@@ -230,7 +230,6 @@ fn add_server() {
                         continue;
                     }
 
-                    // Parse the existing config file (your app config)
                     let cfg_data_str = read_cfg_silent();
                     let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
                         Ok(cfg) => cfg,
@@ -240,7 +239,6 @@ fn add_server() {
                         }
                     };
 
-                    // Parse the server config file to be added
                     let server_toml_str = match fs::read_to_string(path) {
                         Ok(s) => s,
                         Err(e) => {
@@ -257,7 +255,6 @@ fn add_server() {
                         }
                     };
 
-                    // Determine OS to check appropriate jar path
                     let is_windows = cfg_data_toml.system.os_mini == "win";
 
                     let jar_path = if is_windows {
@@ -266,13 +263,11 @@ fn add_server() {
                         &server_toml_toml.server_config.path_unix_jar
                     };
 
-                    // Check if the jar file exists
                     if let Err(_) = fs::metadata(jar_path) {
                         println!("No server.jar found at the specified path: {}", jar_path);
                         continue;
                     }
 
-                    // Add server to existing server_list (avoid overwriting)
                     let mut server_list = cfg_data_toml.server_list.server_list.clone();
 
                     let mut server_count = cfg_data_toml.system.servers;
@@ -281,15 +276,13 @@ fn add_server() {
                     let key = format!("server{}", server_count);
                     server_list.insert(key, path.to_string());
 
-                    // Update config with new server info
                     cfg_data_toml.system.servers = server_count;
                     cfg_data_toml.server_list.server_list = server_list;
 
-                    // Save updated config
                     write_cfg(&cfg_data_toml, "config.toml");
                     println!("Server added successfully.");
 
-                    break; // Exit loop after successful addition
+                    break;
                 }
                 Err(e) => {
                     println!("Failed to read file: {}", e);

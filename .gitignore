@@ -3,5 +3,6 @@ app.cfg
 config.toml
 example.toml
 example*.toml
+*drawio*
 /testing
 /.idea
