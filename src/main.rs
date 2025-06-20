@@ -3,7 +3,6 @@ use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-//use json::stringify;
 use dir::home_dir;
 use std::process::exit;
 
@@ -16,7 +15,7 @@ fn main() {
     println!();
     println!("Actions: ");
     println!("abort: Exits the Application");
-    println!("add: Adds a Server via a JSON File");
+    println!("add: Adds a Server via a TOML File");
     println!("check: Checks if Java is installed on the System");
     println!("exit: Exits the Application");
     println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
@@ -65,7 +64,7 @@ fn main() {
             "help" => {
 				println!("Actions: ");
 				println!("abort: Exits the Application");
-				println!("add: Adds a Server via a JSON File");
+				println!("add: Adds a Server via a TOML File");
 				println!("check: Checks if Java is installed on the System");
 				println!("exit: Exits the Application");
 				println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
@@ -134,10 +133,10 @@ fn add_server() {
             .extension()
             .and_then(|ext| ext.to_str());
 
-        if filetype == Some("json") {
+        if filetype == Some("TOML") {
             match fs::read_to_string(path) {
                 Ok(_contents_string) => {
-                    println!("File is JSON");
+                    println!("File is TOML");
                     break;
                 }
                 Err(e) => {
@@ -146,7 +145,7 @@ fn add_server() {
                 }
             }
         } else {
-            println!("File is not JSON! Please enter a Path to a JSON file.");
+            println!("File is not TOML! Please enter a Path to a TOML file.");
         }
     }
 }
