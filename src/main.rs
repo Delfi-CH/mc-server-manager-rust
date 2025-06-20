@@ -230,10 +230,10 @@ fn init() {
             new_cfg();
         }
     }
-    init_setup();
+    init_setup(false);
 }
 
-fn init_setup() {
+fn init_setup(is_cfg_regenerated: bool) {
     let cfg_data_str = read_cfg_silent();
     let mut cfg_data_toml: Config = toml::from_str(&cfg_data_str)
     .expect("Could not parse TOML");
@@ -243,8 +243,12 @@ fn init_setup() {
         let mut after_inital_setup = false;
         let mut server_dir_set = false;
 
+        if is_cfg_regenerated == false {
         println!("Welcome to the CLI MC-Server Management");
         println!("Since this is the first time running the Application, we need to do some configuration.");
+        } else {
+            println!("After regenerating the configuration file, you need to set some configuration.");
+        }
         println!("Do you want to use the default directory for storing servers?");
         println!("This is either C:\\Users\\[your username]\\.mc-server-manager\\servers on Windows or /home/[your username]/.mc-server-manager/servers on Linux");
         println!("y/n");
@@ -328,11 +332,11 @@ fn init_setup() {
 fn init_silent() {
     match fs::read("config.toml") {
         Ok(_) => {
-            init_setup();
+            init_setup(false);
         }
         Err(_) => {
             new_cfg_silent();
-            init_setup();
+            init_setup(false);
         }
     }
 }
@@ -426,6 +430,7 @@ fn new_cfg_silent(){
                 .expect("Could not write to file");
         }
     }
+    init_setup(true);
 }
 
 fn read_cfg() {
@@ -554,7 +559,7 @@ fn check_java() -> (String, bool) {
 
 fn check_java_silent() -> bool{ 
     let mut os_name = read_cfg_silent();
-    let mut has_java = false;
+    let has_java:bool;
     while os_name == "rerun" {
             os_name = read_cfg_silent();
     }
