@@ -138,9 +138,9 @@ Supported Java Runtimes:
 
 
 
-## Exit Codes
+## Configuration
 
-- Exit Code 0: User terminated the Application.
+For configuring the app, we use TOML (Tom's Obvious Minimal Language). You can read more about it [here](https://toml.io/)
 
 ## FAQ
 
