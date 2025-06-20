@@ -201,6 +201,7 @@ fn add_server() {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Config {
+    title: String,
     system: System,
     storage: Storage,
 }
@@ -223,15 +224,25 @@ fn init() {
     match fs::read("config.toml") {
         Ok(_) => {
             println!("Found config.toml");
+            
         }
         Err(_) => {
             new_cfg();
         }
     }
+    init_setup();
+}
+
+fn init_setup() {
     let cfg_data_str = read_cfg_silent();
-    let cfg_data_toml: Config = toml::from_str(&cfg_data_str)
+    let mut cfg_data_toml: Config = toml::from_str(&cfg_data_str)
     .expect("Could not parse TOML");
     if cfg_data_toml.system.after_initial_setup == false {
+
+        //Set flags for initial setup
+        let mut after_inital_setup = false;
+        let mut server_dir_set = false;
+
         println!("Welcome to the CLI MC-Server Management");
         println!("Since this is the first time running the Application, we need to do some configuration.");
         println!("Do you want to use the default directory for storing servers?");
@@ -253,9 +264,20 @@ fn init() {
 
         if input == "y" {
 
-            println!("Setting server directory to default");
+            let mut default_server_dir: PathBuf = home_dir().expect("Could not find home directory");
+            default_server_dir.push(".mc-server-manager/servers");
+            println!("Setting server directory to the default Value ({})", default_server_dir.to_string_lossy());
+            cfg_data_toml.storage.use_default_server_dir = true;
+            cfg_data_toml.storage.directory = default_server_dir.to_string_lossy().to_string();
+            write_cfg(&cfg_data_toml, "config.toml");
+            server_dir_set = true;
 
         } else if input == "n" {
+
+        let mut is_path_set = false;
+
+        while is_path_set == false {
+            
 
         println!("Please enter the directory where the servers will be stored.");
         print!("-> ");
@@ -270,12 +292,34 @@ fn init() {
         let input= input.to_lowercase();
         let input = input.trim();
 
-        println!("{}", input);
-            
+        match fs::metadata(input) {
+        Ok(_) => {
+            println!("Setting server directory to {}.", input);
+            cfg_data_toml.storage.use_default_server_dir = false;
+            cfg_data_toml.storage.directory = input.to_string();
+            write_cfg(&cfg_data_toml, "config.toml");
+            is_path_set = true;
+            server_dir_set = true;
+        }
+        Err(_) => {
+            println!("{} is not a valid directory!", input);
+        } 
+    }
+    }
         } else {
             println!("Not a valid Input!");
         }
-        
+    
+    if server_dir_set == true {
+        after_inital_setup = true;
+    }
+
+    if after_inital_setup == true {
+        cfg_data_toml.system.after_initial_setup = true;
+        write_cfg(&cfg_data_toml, "config.toml");
+        println!("Initial Setup Complete!")
+    }
+
     } else {
         return;
     }
@@ -284,10 +328,11 @@ fn init() {
 fn init_silent() {
     match fs::read("config.toml") {
         Ok(_) => {
-            return;
+            init_setup();
         }
         Err(_) => {
             new_cfg_silent();
+            init_setup();
         }
     }
 }
@@ -320,6 +365,9 @@ fn new_cfg_silent(){
                 .write_all("# Config for mc-server-management\n\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
+                .write_all("title = \"mc-server-manager_config\"\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
                 .write_all("[system]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
@@ -348,6 +396,9 @@ fn new_cfg_silent(){
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
             cfg_file
                 .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("title = \"mc-server-manager_config\"\n\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[system]\n".as_bytes())
@@ -435,6 +486,13 @@ fn read_cfg_silent() -> String {
             return return_error_statement.to_string();        
         }
     }
+}
+
+fn write_cfg(config: &Config, path: &str) {
+    let toml_string = toml::to_string_pretty(config)
+        .expect("Failed to serialize config to TOML");
+    fs::write(path, toml_string)
+        .expect("Failed to write config file");
 }
 
 fn check_os() -> String {
