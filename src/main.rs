@@ -1,4 +1,4 @@
-//use std::fmt::Error;
+use serde::{Deserialize, Serialize};
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -197,6 +197,28 @@ fn add_server() {
     }
 }
 
+//Structs for config file
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Config {
+    system: System,
+    storage: Storage,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct System {
+    os: String,
+    os_mini: String,
+    servers: i32,
+    after_initial_setup: bool,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Storage {
+    use_default_server_dir: bool,
+    directory: String,
+}
+
+
+
 fn init() {
     match fs::read("config.toml") {
         Ok(_) => {
@@ -206,11 +228,15 @@ fn init() {
             new_cfg();
         }
     }
-    let cfg_data = read_cfg_silent();
-    if cfg_data.contains("after_initial_setup = false") {
+    let cfg_data_str = read_cfg_silent();
+    let cfg_data_toml: Config = toml::from_str(&cfg_data_str)
+    .expect("Could not parse TOML");
+    if cfg_data_toml.system.after_initial_setup == false {
         println!("Welcome to the CLI MC-Server Management");
         println!("Since this is the first time running the Application, we need to do some configuration.");
-        println!("Welcome to the CLI MC-Server Management");
+        println!("Do you want to use the default directory for storing servers?");
+        println!("This is either C:\\Users\\[your username]\\.mc-server-manager\\servers on Windows or /home/[your username]/.mc-server-manager/servers on Linux");
+        println!("y/n");
         print!("-> ");
         io::stdout().flush().unwrap();
 
@@ -222,7 +248,34 @@ fn init() {
 
         let input= input.to_lowercase();
         let input = input.trim();
+
         println!("{}", input);
+
+        if input == "y" {
+
+            println!("Setting server directory to default");
+
+        } else if input == "n" {
+
+        println!("Please enter the directory where the servers will be stored.");
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Could not read the Input");
+
+        let input= input.to_lowercase();
+        let input = input.trim();
+
+        println!("{}", input);
+            
+        } else {
+            println!("Not a valid Input!");
+        }
+        
     } else {
         return;
     }
@@ -287,6 +340,9 @@ fn new_cfg_silent(){
             cfg_file
                 .write_all("use_default_server_dir = false\n".as_bytes())
                 .expect("Could not write to file");
+            cfg_file
+                .write_all("directory = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
         }
         Err(_) => {
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
@@ -313,6 +369,9 @@ fn new_cfg_silent(){
                 .expect("Could not write to file");
             cfg_file
                 .write_all("use_default_server_dir = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("directory = \"none\"\n".as_bytes())
                 .expect("Could not write to file");
         }
     }
