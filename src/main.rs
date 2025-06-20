@@ -1,10 +1,66 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use dir::home_dir;
 use std::process::exit;
+
+
+//Structs
+
+//Structs for config file
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Config {
+    title: String,
+    system: System,
+    storage: Storage,
+    #[serde(default)]
+    server_list: Servers,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct System {
+    os: String,
+    os_mini: String,
+    servers: i32,
+    after_initial_setup: bool,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Storage {
+    use_default_server_dir: bool,
+    directory: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Servers {
+    #[serde(default)]
+    server_list: HashMap<String, String>,
+}
+
+// Structs for a server config file
+#[derive(Serialize, Deserialize, Debug)]
+struct ServerConfigFile {
+    title: String,
+    server_config: ServerConfigData,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct ServerConfigData {
+    name: String,
+    version: String,
+    modloader: String,
+    path_windows_dir: String,
+    path_unix_dir: String,
+    path_windows_jar: String,
+    path_unix_jar: String,   
+    min_mem: i32,
+    max_mem: i32,
+    eula: bool,
+    active: bool,
+    port: i32,
+}
+
 
 fn main() {
 
@@ -172,7 +228,47 @@ fn add_server() {
 
                         if toml_file_read.contains("[server_config]") {
                             println!("File is a vaild Server configuration file.");
-                            break;
+
+                            let cfg_data_str = read_cfg_silent();
+                            let mut cfg_data_toml: Config = toml::from_str(&cfg_data_str)
+                                .expect("Could not parse TOML");
+                            let mut server_count = cfg_data_toml.system.servers;
+                            let mut server_list = Servers {
+                                server_list: HashMap::new(),
+                            };
+
+                            server_count += 1;
+
+                            let key = format!("server{}", server_count);
+                            server_list.server_list.insert(key, path.to_string());
+
+                            cfg_data_toml.system.servers = server_count;
+                            cfg_data_toml.server_list.server_list = server_list.server_list;
+                            write_cfg(&cfg_data_toml, "config.toml");
+
+                            let server_toml_str = read_server_toml(path);
+                            let server_toml_toml: ServerConfigFile = toml::from_str(&server_toml_str)
+                                .expect("Could not parse TOML");
+                            if cfg_data_toml.system.os_mini == "win" {
+                            match fs::metadata(server_toml_toml.server_config.path_windows_jar) {
+                            Ok(_) => {
+                            println!("works")
+                            }
+                            Err(_) => {
+                                println!("No server.jar found at the specified path");
+                            } 
+                            };
+                            } else {
+                                match fs::metadata(server_toml_toml.server_config.path_unix_jar) {
+                                Ok(_) => {
+                                println!("works")
+                                }
+                                Err(_) => {
+                                println!("No server.jar found at the specified path");
+                                } 
+                                };
+                                } 
+                                break;
                         } else {
                             println!("File is not a vaild Server configuration file!");
                             println!("Try again");
@@ -197,26 +293,14 @@ fn add_server() {
     }
 }
 
-//Structs for config file
+impl Default for Servers {
+    fn default() -> Self {
+        Servers {
+            server_list: HashMap::new(),
+        }
+    }
+}
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Config {
-    title: String,
-    system: System,
-    storage: Storage,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct System {
-    os: String,
-    os_mini: String,
-    servers: i32,
-    after_initial_setup: bool,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct Storage {
-    use_default_server_dir: bool,
-    directory: String,
-}
 
 
 
@@ -395,6 +479,12 @@ fn new_cfg_silent(){
             cfg_file
                 .write_all("directory = \"none\"\n".as_bytes())
                 .expect("Could not write to file");
+            cfg_file
+                .write_all("[servers]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("server_list = {}\n".as_bytes())
+                .expect("Could not write to file");
         }
         Err(_) => {
             let mut cfg_file = File::create("config.toml").expect("Could not create file");
@@ -427,6 +517,12 @@ fn new_cfg_silent(){
                 .expect("Could not write to file");
             cfg_file
                 .write_all("directory = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[servers]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("server_list = {}\n".as_bytes())
                 .expect("Could not write to file");
         }
     }
@@ -780,3 +876,29 @@ fn download_server() {
         println!("Finished!");
     }
         }
+
+
+fn read_server_toml(path: &str) -> String {
+
+    match File::open(path) {
+        Ok(mut toml_file) => {
+            let mut toml_file_content = String::new();
+            if let Err(e) = toml_file.read_to_string(&mut toml_file_content) {
+                eprintln!("Error reading file: {}", e);
+                return toml_file_content;
+            } else {
+                return toml_file_content;
+            }
+        }
+        Err(_) => {
+            new_cfg_silent();
+            let return_error_statement = "Could not read TOML";
+            return return_error_statement.to_string();        
+        }
+    }
+}
+
+//fn start_toml() {
+//    // TODO: EVERYTHING
+//    return;
+//}
