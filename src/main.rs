@@ -38,6 +38,14 @@ struct Servers {
     #[serde(default)]
     server_list: HashMap<String, String>,
 }
+impl Default for Servers {
+    fn default() -> Self {
+        Servers {
+            server_list: HashMap::new(),
+        }
+    }
+}
+
 
 // Structs for a server config file
 #[derive(Serialize, Deserialize, Debug)]
@@ -193,127 +201,106 @@ fn main() {
 
 fn add_server() {
     loop {
-        println!("Enter file path: ");
+        println!("Enter file path:");
         println!("Type abort to exit.");
         print!("-> ");
         io::stdout().flush().unwrap();
 
         let mut input_path = String::new();
-
         io::stdin()
             .read_line(&mut input_path)
             .expect("Failed to read path");
 
-        let path: &str = input_path.trim();
+        let path = input_path.trim();
 
-        if path == "abort" {
+        if path.eq_ignore_ascii_case("abort") {
             break;
         }
 
-        let filetype = Path::new(path)
-            .extension()
-            .and_then(|ext| ext.to_str());
+        let filetype = Path::new(path).extension().and_then(|ext| ext.to_str());
 
         if filetype == Some("toml") {
             match fs::read_to_string(path) {
-                Ok(_contents_string) => {
+                Ok(contents_string) => {
                     println!("File is a toml file");
-                match File::open(path) {
-                Ok(mut toml_file) => {
-                    let mut toml_file_read = String::new();
-                    if let Err(e) = toml_file.read_to_string(&mut toml_file_read) {
-                        eprintln!("Error reading file: {}", e);
-                        break;
-                    } else {
 
-                        if toml_file_read.contains("[server_config]") {
-                            println!("File is a vaild Server configuration file.");
+                    if !contents_string.contains("[server_config]") {
+                        println!("File is not a valid Server configuration file!");
+                        println!("Try again");
+                        continue;
+                    }
 
-                            let cfg_data_str = read_cfg_silent();
-                            let mut cfg_data_toml: Config = toml::from_str(&cfg_data_str)
-                                .expect("Could not parse TOML");
-
-                            let server_toml_str = read_server_toml(path);
-                            let server_toml_toml: ServerConfigFile = toml::from_str(&server_toml_str)
-                                .expect("Could not parse TOML");
-                            if cfg_data_toml.system.os_mini == "win" {
-                            match fs::metadata(server_toml_toml.server_config.path_windows_jar) {
-                            Ok(_) => {
-                            let mut server_count = cfg_data_toml.system.servers;
-                            let mut server_list = Servers {
-                                server_list: HashMap::new(),
-                            };
-
-                            server_count += 1;
-
-                            let key = format!("server{}", server_count);
-                            server_list.server_list.insert(key, path.to_string());
-
-                            cfg_data_toml.system.servers = server_count;
-                            cfg_data_toml.server_list.server_list = server_list.server_list;
-                            write_cfg(&cfg_data_toml, "config.toml");
-                            }
-                            Err(_) => {
-                                println!("No server.jar found at the specified path");
-                            } 
-                            };
-                            } else {
-                                match fs::metadata(server_toml_toml.server_config.path_unix_jar) {
-                                Ok(_) => {
-                                    let mut server_count = cfg_data_toml.system.servers;
-                                    let mut server_list = Servers {
-                                    server_list: HashMap::new(),
-                                    };
-
-                                    server_count += 1;
-
-                                    let key = format!("server{}", server_count);
-                                    server_list.server_list.insert(key, path.to_string());
-
-                                    cfg_data_toml.system.servers = server_count;
-                                    cfg_data_toml.server_list.server_list = server_list.server_list;
-                                     write_cfg(&cfg_data_toml, "config.toml");
-                                }
-                                Err(_) => {
-                                println!("No server.jar found at the specified path");
-                                } 
-                                };
-                                } 
-                                break;
-                        } else {
-                            println!("File is not a vaild Server configuration file!");
-                            println!("Try again");
+                    // Parse the existing config file (your app config)
+                    let cfg_data_str = read_cfg_silent();
+                    let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
+                        Ok(cfg) => cfg,
+                        Err(e) => {
+                            eprintln!("Could not parse config.toml: {}", e);
                             continue;
                         }
+                    };
+
+                    // Parse the server config file to be added
+                    let server_toml_str = match fs::read_to_string(path) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            eprintln!("Failed to read server config file: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let server_toml_toml: ServerConfigFile = match toml::from_str(&server_toml_str) {
+                        Ok(srv) => srv,
+                        Err(e) => {
+                            eprintln!("Could not parse server config TOML: {}", e);
+                            continue;
+                        }
+                    };
+
+                    // Determine OS to check appropriate jar path
+                    let is_windows = cfg_data_toml.system.os_mini == "win";
+
+                    let jar_path = if is_windows {
+                        &server_toml_toml.server_config.path_windows_jar
+                    } else {
+                        &server_toml_toml.server_config.path_unix_jar
+                    };
+
+                    // Check if the jar file exists
+                    if let Err(_) = fs::metadata(jar_path) {
+                        println!("No server.jar found at the specified path: {}", jar_path);
+                        continue;
                     }
+
+                    // Add server to existing server_list (avoid overwriting)
+                    let mut server_list = cfg_data_toml.server_list.server_list.clone();
+
+                    let mut server_count = cfg_data_toml.system.servers;
+                    server_count += 1;
+
+                    let key = format!("server{}", server_count);
+                    server_list.insert(key, path.to_string());
+
+                    // Update config with new server info
+                    cfg_data_toml.system.servers = server_count;
+                    cfg_data_toml.server_list.server_list = server_list;
+
+                    // Save updated config
+                    write_cfg(&cfg_data_toml, "config.toml");
+                    println!("Server added successfully.");
+
+                    break; // Exit loop after successful addition
                 }
                 Err(e) => {
                     println!("Failed to read file: {}", e);
                     continue;
                 }
             }
-        }
-        Err(e) => {
-                    println!("Failed to read file: {}", e);
-                    continue;
-                }
-            }
         } else {
-            println!("File is not TOML! Please enter a Path to a TOML file.");
+            println!("File is not TOML! Please enter a path to a TOML file.");
         }
     }
 }
-
-impl Default for Servers {
-    fn default() -> Self {
-        Servers {
-            server_list: HashMap::new(),
-        }
-    }
-}
-
-
-
 
 fn init() {
     match fs::read("config.toml") {
@@ -887,27 +874,6 @@ fn download_server() {
         println!("Finished!");
     }
         }
-
-
-fn read_server_toml(path: &str) -> String {
-
-    match File::open(path) {
-        Ok(mut toml_file) => {
-            let mut toml_file_content = String::new();
-            if let Err(e) = toml_file.read_to_string(&mut toml_file_content) {
-                eprintln!("Error reading file: {}", e);
-                return toml_file_content;
-            } else {
-                return toml_file_content;
-            }
-        }
-        Err(_) => {
-            new_cfg_silent();
-            let return_error_statement = "Could not read TOML";
-            return return_error_statement.to_string();        
-        }
-    }
-}
 
 //fn start_toml() {
 //    // TODO: EVERYTHING
