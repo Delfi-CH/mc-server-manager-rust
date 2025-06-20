@@ -1,7 +1,0 @@
-{
-    "path_windows": "C:\\path\\to\\jar",
-    "path_unix": "/path/to/jar",
-    "name" : "example name",
-    "type" : "vanilla",
-    "verson" : "1.21.5"    
-}
