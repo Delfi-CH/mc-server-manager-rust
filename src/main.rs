@@ -45,6 +45,18 @@ fn main() {
                 println!("Exiting application.");
                 exit(0);
             }
+            "about" => {
+                println!();
+                println!("mc-server-manager");
+                println!();
+                println!("Developed by:");
+                print!("Delfi-CH - ");
+                println!("https://delfi.dev/");
+                println!();
+                println!("This program is licensed under the terms of the GNU General Public License Version 3.");
+                println!("For more information, run the license action.");
+                println!();
+            }
             "add" => {
                 add_server();
             }
@@ -64,12 +76,14 @@ fn main() {
             "help" => {
 				println!("Actions: ");
 				println!("abort: Exits the Application");
+                println!("about: Shows Information about the Application");
 				println!("add: Adds a Server via a TOML File");
 				println!("check: Checks if Java is installed on the System");
 				println!("exit: Exits the Application");
 				println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
 				println!("install: Download and install a Server from the Internet");
 				println!("help: Lists all Actions");
+                println!("license: Shows all Information about licensing.");
 				println!("newcfg: Generates a new config.toml");
 				println!("readcfg: Reads the current config.toml and prints them");
 				println!("source: Opens the projects Git Repository in your default Browser");
@@ -102,6 +116,11 @@ fn main() {
                 if let Err(e) = open::that("https://github.com/Delfi-CH/mc-server-management/tree/main") {
                 eprintln!("Failed to open browser: {}", e);
                 }
+            }
+            "license" => {
+                println!();
+                println!("This program is licensed under the terms of the GNU General Public License Version 3.");
+
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
@@ -180,6 +199,26 @@ fn init() {
         Err(_) => {
             new_cfg();
         }
+    }
+    let cfg_data = read_cfg_silent();
+    if cfg_data.contains("after_initial_setup = false") {
+        println!("Welcome to the CLI MC-Server Management");
+        println!("Since this is the first time running the Application, we need to do some configuration.");
+        println!("Welcome to the CLI MC-Server Management");
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Could not read the Input");
+
+        let input= input.to_lowercase();
+        let input = input.trim();
+        println!("{}", input);
+    } else {
+        return;
     }
 }
 
