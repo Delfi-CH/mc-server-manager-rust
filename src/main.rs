@@ -123,7 +123,7 @@ fn add_server() {
             .read_line(&mut input_path)
             .expect("Failed to read path");
 
-        let path = input_path.trim();
+        let path: &str = input_path.trim();
 
         if path == "abort" {
             break;
@@ -133,13 +133,28 @@ fn add_server() {
             .extension()
             .and_then(|ext| ext.to_str());
 
-        if filetype == Some("TOML") {
+        if filetype == Some("toml") {
             match fs::read_to_string(path) {
                 Ok(_contents_string) => {
-                    println!("File is TOML");
-                    break;
+                    println!("File is a toml file");
+                match File::open(path) {
+                Ok(mut toml_file) => {
+                    let mut toml_file_read = String::new();
+                    if let Err(e) = toml_file.read_to_string(&mut toml_file_read) {
+                        eprintln!("Error reading file: {}", e);
+                        break;
+                    } else {
+                        println!("{}", toml_file_read);
+                        break;
+                    }
                 }
                 Err(e) => {
+                    println!("Failed to read file: {}", e);
+                    continue;
+                }
+            }
+        }
+        Err(e) => {
                     println!("Failed to read file: {}", e);
                     continue;
                 }
