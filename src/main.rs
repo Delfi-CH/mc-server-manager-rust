@@ -175,10 +175,10 @@ fn new_cfg(){
                 .write_all("[system]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("servers = 0\n".as_bytes())
@@ -195,10 +195,10 @@ fn new_cfg(){
                 .write_all("[system]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("servers = 0\n".as_bytes())
@@ -221,10 +221,10 @@ fn new_cfg_silent(){
                 .write_all("[system]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("servers = 0\n".as_bytes())
@@ -239,10 +239,10 @@ fn new_cfg_silent(){
                 .write_all("[system]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os = \"{}\"\n", check_os()).as_bytes())
+                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("os_mini = \"{}\"\n", check_os_mini()).as_bytes())
+                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("servers = 0\n".as_bytes())
@@ -313,7 +313,7 @@ fn read_cfg_silent() -> String {
 
 fn check_os() -> String {
     let info = os_info::get();
-    let os_info = format!("OS: {}\n", info);
+    let os_info = format!("{}", info);
     os_info
 }
 
@@ -328,7 +328,7 @@ fn check_os_mini() -> String {
         "unix"
     };
 
-    let os_info_mini = format!("OS-Mini: {}\n", os_mini);
+    let os_info_mini = format!("{}", os_mini);
     os_info_mini
 }
 
