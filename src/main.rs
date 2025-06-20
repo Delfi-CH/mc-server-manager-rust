@@ -232,6 +232,13 @@ fn add_server() {
                             let cfg_data_str = read_cfg_silent();
                             let mut cfg_data_toml: Config = toml::from_str(&cfg_data_str)
                                 .expect("Could not parse TOML");
+
+                            let server_toml_str = read_server_toml(path);
+                            let server_toml_toml: ServerConfigFile = toml::from_str(&server_toml_str)
+                                .expect("Could not parse TOML");
+                            if cfg_data_toml.system.os_mini == "win" {
+                            match fs::metadata(server_toml_toml.server_config.path_windows_jar) {
+                            Ok(_) => {
                             let mut server_count = cfg_data_toml.system.servers;
                             let mut server_list = Servers {
                                 server_list: HashMap::new(),
@@ -245,14 +252,6 @@ fn add_server() {
                             cfg_data_toml.system.servers = server_count;
                             cfg_data_toml.server_list.server_list = server_list.server_list;
                             write_cfg(&cfg_data_toml, "config.toml");
-
-                            let server_toml_str = read_server_toml(path);
-                            let server_toml_toml: ServerConfigFile = toml::from_str(&server_toml_str)
-                                .expect("Could not parse TOML");
-                            if cfg_data_toml.system.os_mini == "win" {
-                            match fs::metadata(server_toml_toml.server_config.path_windows_jar) {
-                            Ok(_) => {
-                            println!("works")
                             }
                             Err(_) => {
                                 println!("No server.jar found at the specified path");
@@ -261,7 +260,19 @@ fn add_server() {
                             } else {
                                 match fs::metadata(server_toml_toml.server_config.path_unix_jar) {
                                 Ok(_) => {
-                                println!("works")
+                                    let mut server_count = cfg_data_toml.system.servers;
+                                    let mut server_list = Servers {
+                                    server_list: HashMap::new(),
+                                    };
+
+                                    server_count += 1;
+
+                                    let key = format!("server{}", server_count);
+                                    server_list.server_list.insert(key, path.to_string());
+
+                                    cfg_data_toml.system.servers = server_count;
+                                    cfg_data_toml.server_list.server_list = server_list.server_list;
+                                     write_cfg(&cfg_data_toml, "config.toml");
                                 }
                                 Err(_) => {
                                 println!("No server.jar found at the specified path");
