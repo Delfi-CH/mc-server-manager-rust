@@ -2,13 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env;
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use dir::home_dir;
 use std::process::exit;
-
 
 //Structs
 
@@ -29,6 +29,7 @@ struct System {
     os_mini: String,
     servers: i32,
     after_initial_setup: bool,
+    data_path: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct Storage {
@@ -159,7 +160,7 @@ fn main() {
 				println!("startjar: Start a Server from a .jar file");
             }
             "start" => {
-                println!("start: not yet implemented");
+                start_toml();
             }
             "startjar" => {
                 start_manual();
@@ -206,23 +207,24 @@ fn add_server() {
         println!("Enter file path:");
         println!("Type abort to exit.");
         print!("-> ");
-        io::stdout().flush().unwrap();
+            io::stdout().flush().expect("Failed to flush stdout");
 
         let mut input_path = String::new();
         io::stdin()
-            .read_line(&mut input_path)
-            .expect("Failed to read path");
+        .read_line(&mut input_path)
+        .expect("Failed to read path");
 
-        let path = input_path.trim();
-
-        if path.eq_ignore_ascii_case("abort") {
+        if input_path == "abort" {
             break;
         }
 
-        let filetype = Path::new(path).extension().and_then(|ext| ext.to_str());
+        let path = input_path.trim();
+        let full_path = mk_path_absolute(path);
+
+        let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
 
         if filetype == Some("toml") {
-            match fs::read_to_string(path) {
+            match fs::read_to_string(&full_path) {
                 Ok(contents_string) => {
                     println!("File is a toml file");
 
@@ -241,7 +243,7 @@ fn add_server() {
                         }
                     };
 
-                    let server_toml_str = match fs::read_to_string(path) {
+                    let server_toml_str = match fs::read_to_string(&full_path) {
                         Ok(s) => s,
                         Err(e) => {
                             eprintln!("Failed to read server config file: {}", e);
@@ -276,7 +278,9 @@ fn add_server() {
                     server_count += 1;
 
                     let key = format!("server{}", server_count);
-                    server_list.insert(key, path.to_string());
+                    let path_str = full_path.display().to_string();
+                    let clean_path = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
+                    server_list.insert(key, clean_path.to_string());
 
                     cfg_data_toml.system.servers = server_count;
                     cfg_data_toml.server_list.server_list = server_list;
@@ -323,6 +327,24 @@ fn init_setup(is_cfg_regenerated: bool) {
         if is_cfg_regenerated == false {
         println!("Welcome to the CLI MC-Server Management");
         println!("Since this is the first time running the Application, we need to do some configuration.");
+
+        let mut data_dir: PathBuf = home_dir().expect("Could not find home directory");
+        data_dir.push(".mc-server-manager");
+        cfg_data_toml.system.data_path = data_dir.to_string_lossy().to_string();
+        write_cfg(&cfg_data_toml, "config.toml");
+        
+        println!("Creating data directory...");
+        match fs::metadata(&data_dir) {
+            Ok(_) => {
+            println!("Directory already exists!");  
+            }
+            Err(_) => {
+                fs::create_dir(data_dir).expect("Could not create directory");
+            }
+        }
+        
+        
+
         } else {
             println!("After regenerating the configuration file, you need to set some configuration.");
         }
@@ -352,6 +374,14 @@ fn init_setup(is_cfg_regenerated: bool) {
             cfg_data_toml.storage.directory = default_server_dir.to_string_lossy().to_string();
             write_cfg(&cfg_data_toml, "config.toml");
             server_dir_set = true;
+            match fs::metadata(&default_server_dir) {
+            Ok(_) => {
+            println!("Directory already exists!");  
+            }
+            Err(_) => {
+                fs::create_dir(default_server_dir).expect("Could not create directory");
+            }
+        }
 
         } else if input == "n" {
 
@@ -398,7 +428,7 @@ fn init_setup(is_cfg_regenerated: bool) {
     if after_inital_setup == true {
         cfg_data_toml.system.after_initial_setup = true;
         write_cfg(&cfg_data_toml, "config.toml");
-        println!("Initial Setup Complete!")
+        println!("Initial Setup Complete!");
     }
 
     } else {
@@ -464,6 +494,9 @@ fn new_cfg_silent(){
                 .write_all("after_initial_setup = false\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
+                .write_all("data_path = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
                 .write_all("[storage]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
@@ -501,6 +534,9 @@ fn new_cfg_silent(){
                 .expect("Could not write to file");
             cfg_file
                 .write_all("after_initial_setup = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("data_path = \"\"\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[storage]\n".as_bytes())
@@ -610,17 +646,11 @@ fn check_os_mini() -> String {
     os_info_mini
 }
 
-fn check_java() -> (String, bool) {
+fn check_java() -> bool {
     let mut os_name = read_cfg_silent();
     while os_name == "rerun" {
         os_name = read_cfg_silent();
     }
-
-    let platform = if os_name.contains("Windows") {
-        "win"
-    } else {
-        "unix"
-    };
 
     let output = Command::new("java")
         .args(&["-version"])
@@ -643,7 +673,7 @@ fn check_java() -> (String, bool) {
         println!("Java wasn't found or is missing!");
     }
 
-    (platform.to_string(), has_java)
+    has_java
 }
 
 fn check_java_silent() -> bool{ 
@@ -870,7 +900,67 @@ fn download_server() {
     }
         }
 
-//fn start_toml() {
-//    // TODO: EVERYTHING
-//    return;
-//}
+fn start_toml() {
+    /*let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+    let mut has_selected_server = false;
+
+    if cfg_app_data.system.servers != 0 {
+
+    for (server_name, filename) in &cfg_app_data.server_list.server_list {
+        println!("{} => {}", server_name, filename);
+    }
+
+    println!("What server do you want to start?");
+    println!("Please enter a number.");
+    println!("Type abort to exit.");
+
+    let mut input1 = String::new();
+
+    while has_selected_server == false {
+        print!("->");
+        io::stdout().flush().unwrap();
+
+        input1.clear();
+        io::stdin()
+            .read_line(&mut input1)
+            .expect("Could not read the Input");
+
+        input1 = input1.trim().to_lowercase();
+
+        if input1 == "abort" {
+            println!("Exiting starting process...");
+            return;
+        } else if input1.chars().any(|c| c.is_digit(10)) {
+            has_selected_server = true;
+            break;
+        } else {
+            println!("Please enter a Number!");
+        }
+    }
+
+    if has_selected_server == true {
+        let mut server_name = String::from("server");
+        server_name += &input1;
+        println!("{}", server_name);
+
+
+    }
+}else {
+    println!("No Server found!");
+    println!("Please add a Server via the add action.");
+}*/ println!("not implemented yet");
+}
+
+fn mk_path_absolute(input_path: &str) -> PathBuf {
+    let path = Path::new(input_path);
+
+    if path.is_absolute() {
+        std::fs::canonicalize(path).expect("Failed to canonicalize absolute path")
+    } else {
+        let current_dir = env::current_dir().expect("Failed to get current directory");
+        std::fs::canonicalize(current_dir.join(path)).expect("Failed to canonicalize joined path")
+    }
+}
