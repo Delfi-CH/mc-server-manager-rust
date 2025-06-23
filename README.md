@@ -37,7 +37,7 @@ Recommended: 8 Gigabytes and more.
 
 #### **RedHat-based:**
 
-- Fedora 42 or higher
+- Fedora 41 or higher
 - RHEL 9 or higher
 - "RHEL-Clone (Oracle Linux, AlmaLinux, etc..)" compatible with RHEL 9 or higher
 
@@ -125,6 +125,7 @@ Supported Java Runtimes:
   **openSUSE:**
   
    ```bash
+  sudo zypper update
   sudo zypper refresh
   sudo zypper search openjdk
   sudo zypper install java-[PREFERED-VERSION-HERE]-openjdk
@@ -158,7 +159,7 @@ See [here](https://github.com/Delfi-CH/mc-server-management/blob/main/COMPILING.
 
 THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
 
-This program is licensed under the terms of the GNU General Public License Version 3.
+This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).
 For more information, please visit https://www.gnu.org/licenses/gpl-3.0
 However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.
 These functions require agreeing to the Minecraft End User License Agreement (EULA).

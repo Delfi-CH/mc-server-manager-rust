@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{self, Read, Write};
@@ -185,7 +187,7 @@ fn main() {
             }
             "license" => {
                 println!();
-                println!("This program is licensed under the terms of the GNU General Public License Version 3.");
+                println!("This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).");
                 println!("For more information, please visit https://www.gnu.org/licenses/gpl-3.0");
                 println!("However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.");
                 println!("These functions require agreeing to the Minecraft End User License Agreement (EULA).");
