@@ -12,6 +12,7 @@ NO Multithreading + NO WebUI
 - Set Min and Max Ram [DONE]
 - Rework config file from app.cfg to config.toml [DONE]
 - Rewrite start_manual into 2 Functions [DONE]
+- Backup and creating / managing data directory [DONE]
 - server TOML and config.toml parsing
 
 ## Stage 2
