@@ -68,7 +68,6 @@ struct ServerConfigData {
     min_mem: i32,
     max_mem: i32,
     eula: bool,
-    active: bool,
     port: i32,
 }
 
@@ -901,7 +900,7 @@ fn download_server() {
         }
 
 fn start_toml() {
-    /*let cfg_app_str = read_cfg_silent();
+    let cfg_app_str = read_cfg_silent();
     let cfg_app_data: Config = toml::from_str(&cfg_app_str)
         .expect("Could not parse TOML");
 
@@ -909,18 +908,23 @@ fn start_toml() {
 
     if cfg_app_data.system.servers != 0 {
 
+    println!("List of servers:");
+    println!();
+
     for (server_name, filename) in &cfg_app_data.server_list.server_list {
         println!("{} => {}", server_name, filename);
     }
 
+    println!();
+
     println!("What server do you want to start?");
     println!("Please enter a number.");
-    println!("Type abort to exit.");
+    println!("or type abort to exit.");
 
     let mut input1 = String::new();
 
     while has_selected_server == false {
-        print!("->");
+        print!("-> ");
         io::stdout().flush().unwrap();
 
         input1.clear();
@@ -944,14 +948,85 @@ fn start_toml() {
     if has_selected_server == true {
         let mut server_name = String::from("server");
         server_name += &input1;
-        println!("{}", server_name);
+        println!("Selected {}", server_name);
 
+        if cfg_app_data.server_list.server_list.contains_key(&server_name) == true {
+            let server_toml_path = cfg_app_data.server_list.server_list["server1"].clone();
+            println!("{}", server_toml_path);
 
-    }
-}else {
+            let cfg_server_str = fs::read_to_string(server_toml_path)
+            .expect("Could not read file");
+            let cfg_server_toml : ServerConfigFile =  toml::from_str(&cfg_server_str).expect("Could not parse TOML"); 
+
+            #[warn(unused_mut)]
+            //is only here bc warn is kind of buggy
+            let mut path_jar_str = String::new();
+            if cfg_app_data.system.os_mini == "win" {
+                path_jar_str = cfg_server_toml.server_config.path_windows_jar;
+            } else {
+                path_jar_str = cfg_server_toml.server_config.path_unix_jar;
+            }
+            #[warn(unused_mut)]
+            //is only here bc warn is kind of buggy
+            let mut path_dir_str = String::new();
+            if cfg_app_data.system.os_mini == "win" {
+                path_dir_str = cfg_server_toml.server_config.path_windows_dir;
+            } else {
+                path_dir_str = cfg_server_toml.server_config.path_unix_dir;
+            }
+            let mut agree_eula = cfg_server_toml.server_config.eula;
+            
+            let eula_path = path_dir_str.clone() + "eula.txt";
+
+            if let Ok(contents) = fs::read_to_string(&eula_path) {
+                    if contents.contains("eula = true") {
+                        agree_eula = true;
+                    }
+                }
+
+            if agree_eula == false { 
+                
+                println!("Do you agree to the Minecraft EULA?");
+                println!("https://www.minecraft.net/en-us/eula");
+                println!("y/n/open");
+
+                while !agree_eula {
+                    print!("-> ");
+                    io::stdout().flush().unwrap();
+
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).unwrap();
+                    let input = input.trim().to_lowercase();
+
+                    match input.as_str() {
+                        "y" => agree_eula = true,
+                        "n" => break,
+                        "open" => {
+                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
+                                eprintln!("Failed to open browser: {}", e);
+                            }
+                        }
+                        _ => println!("Not a valid input"),
+                    }
+                }
+                let _ = fs::write(&eula_path, "eula = true");
+                }
+            
+            let mem_min:u32 = cfg_server_toml.server_config.min_mem.try_into().unwrap();
+            let mem_max:u32 = cfg_server_toml.server_config.max_mem.try_into().unwrap();
+            
+            let path_to_jar = Path::new(&path_jar_str);
+            let path_server_dir = Path::new(&path_dir_str);
+
+            println!("Starting Server...");
+            
+            start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
+        }
+} else {
     println!("No Server found!");
     println!("Please add a Server via the add action.");
-}*/ println!("not implemented yet");
+}
+}
 }
 
 fn mk_path_absolute(input_path: &str) -> PathBuf {
