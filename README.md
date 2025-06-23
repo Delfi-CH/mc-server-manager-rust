@@ -5,12 +5,13 @@ rust tool for managing multiple selfohosted minecraft servers
 CURRENTLY WORK IN PROGRESS!
 DO NOT USE
 NOT ALL FEATURES ARE IMPLEMENTED
+FOR MORE INFO SEE [HERE](https://github.com/Delfi-CH/mc-server-management/blob/main/TODO.md)
 
 ## Requirements
 
 ### Processor:
 
-x86-64 based Processor (Intel/Amd)
+x86-64 based Processor (Intel/AMD)
 
 ### RAM:
 
@@ -74,7 +75,7 @@ Supported Java Runtimes:
   - Click **New** and paste the path to the `bin` directory.
   - Click **OK** to apply the changes.
 
-- Open **Command Prompt** (or any terminal).
+- Open **Command Prompt**.
 - Run the following command:
 
   ```bash
@@ -106,7 +107,7 @@ Supported Java Runtimes:
   sudo dnf install java
   ```
 
-  **Arch  Linux:**
+  **Arch Linux:**
   
    ```bash
   sudo pacman -Syu jdk-openjdk
