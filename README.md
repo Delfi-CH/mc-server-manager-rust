@@ -138,7 +138,70 @@ Supported Java Runtimes:
   java -version
   ```
 
+## Minecraft Support
 
+### Game Versions
+
+ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
+
+- Version 1.21.x
+    - 1.21.6
+    - 1.21.5
+    - 25w14craftmine (April Fools)
+    - 1.21.4
+    - 1.21.3
+    - 1.21.1
+- Minecraft 1.20.x
+  - 1.20.6
+  - 24w14potato (April Fools)
+  - 1.20.4
+  - 1.20.2
+  - 1.20.1 (pre Villager Rebalancing)
+  - 23w13a_or_b (April Fools)
+- Minecraft 1.19.x
+  - 1.19.4
+  - 22w13oneBlockAtATime (April Fools)
+- Minecraft 1.18.x
+  - 1.18.2
+- Minecraft 1.17.x
+  - 1.17.1
+- Minecraft 1.16.x
+  - 1.16.5
+  - 1.16.2
+  - 1.16.1
+  - 20w14infinite (April Fools)
+- Minecraft 1.15.x
+  - 1.15.2
+- Minecraft 1.14.x
+  - 1.14.4
+  - 3D Shareware v1.34 (April Fools)
+- Minecraft 1.13.x
+  - 1.13.2
+- Minecraft 1.12.x
+  - 1.12.2
+- Minecraft 1.9.x - 1.11.x
+  - 1.11.2
+  - 1.10.2
+  - 1.9.4
+  - 1.RV-Pre1 (April Fools)
+- Minecraft 1.7.x - 1.8.x
+  - 1.8.9
+  - 15w14a (April Fools)
+  - 1.7.10
+
+- Minecraft 1.0.x - 1.7.x
+    - We currently dont support these versions.
+
+### Modloaders
+
+- Forge:
+  - Minecraft 1.7.10 - 1.21.6
+- NeoForge:
+  - Minecraft 1.20.2 - 1.21.6
+- Fabric
+  - Minecraft 1.14.4 - 1.21.6
+- Quilt
+  - Minecraft 1.18.2 - 1.21.6
 
 ## Configuration
 
