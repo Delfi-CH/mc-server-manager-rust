@@ -9,8 +9,20 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use dir::{home_dir};
 use std::process::exit;
-use std::thread;
-use std::time::Duration;
+use std::{thread, time::Duration};
+#[cfg(unix)]
+use libc;
+use std::process::Child;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+
+
+//Consts
+
+//Used for spawning java on Windows
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 //Structs
 
@@ -844,38 +856,91 @@ fn start_manual() {
     }
 }
 
-fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool) -> bool {
-if eula == true {
+fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool) -> (bool, String) {
+    if !eula {
+        return (false, "no_start".to_string());
+    }
+
     let xms_arg = format!("-Xms{}M", mem_min);
     let xmx_arg = format!("-Xmx{}M", mem_max);
 
-Command::new("java")
-    .args([
-        &xms_arg,
-        &xmx_arg,
-        "-jar",
-        jar_path.to_str().unwrap(),
-        "nogui",
-    ])
-    .current_dir(&command_path)
-    .stdout(Stdio::null())
-    .stderr(Stdio::null()) 
-    .spawn()
-    .expect("Failed to start Server");
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str).expect("Could not parse TOML");
 
-    thread::sleep(Duration::from_secs(5));
+    let mut server: Option<Child> = None;
 
-    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
-    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
-    
-    if jps_str.contains(&command_path.to_string_lossy().to_string().to_lowercase()) {
-        return true;
-    } else {
-        return false;
+    if cfg_app_data.system.os.to_lowercase().contains("windows") {
+        #[cfg(windows)]
+        {
+            server = Some(
+                Command::new("java")
+                    .args([
+                        xms_arg,
+                        xmx_arg,
+                        "-jar".to_string(),
+                        jar_path.display().to_string(),
+                        "nogui".to_string(),
+                    ])
+                    .current_dir(command_path)
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()
+                    .expect("Failed to start Java process"),
+            );
+
+            thread::sleep(Duration::from_secs(5));
+
+            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+            if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+        }
+    } else if cfg_app_data.system.os_mini.to_lowercase().contains("linux") {
+        #[cfg(unix)]
+        {
+            server = Some(
+                Command::new("java")
+                    .args([
+                        xms_arg,
+                        xmx_arg,
+                        "-jar".to_string(),
+                        jar_path.display().to_string(),
+                        "nogui".to_string(),
+                    ])
+                    .current_dir(command_path)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .before_exec(|| {
+                        unsafe {
+                            libc::setsid();
+                        }
+                        Ok(())
+                    })
+                    .spawn()
+                    .expect("Failed to spawn detached Java process"),
+            );
+
+            thread::sleep(Duration::from_secs(5));
+
+            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+            if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+        }
     }
 
-    
-} else {return false;}
+    (false, "no_start".to_string())
 }
 
 fn download_server() {
@@ -1047,7 +1112,7 @@ fn start_toml() {
 
             println!("Starting Server...");
             
-            let has_server_started = start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
+            let (has_server_started, server_pid) = start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
             
             if has_server_started == true {
                 println!("Server started sucessfully!");
@@ -1089,4 +1154,30 @@ fn list_servers(){
         .expect("Could not parse TOML");
 
     println!("{}", jps_str);
+}
+
+fn create_server_toml(
+    toml_path: String,     
+    name: String,
+    version: String,
+    modloader: String,
+    path_windows_dir: String,
+    path_unix_dir: String,
+    path_windows_jar: String,
+    path_unix_jar: String,   
+    min_mem: i32,
+    max_mem: i32,
+    port: i32,) -> bool {
+
+    //also needs work
+
+    let mut server_toml = File::create(toml_path).expect("Could not create file");
+
+    server_toml.write_all("e".as_bytes())
+    .expect("Could not write to file");
+    
+    //temp so that the compiler doesnt throw 10 errors at me
+    println!("{}{}{}{}{}{}{}{}{}{}", name, version, modloader, path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, min_mem, max_mem, port);
+
+    return true;
 }
