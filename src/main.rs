@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap};
 use std::env;
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use std::process::Command;
-use dir::home_dir;
+use std::process::{Command, Stdio};
+use dir::{home_dir};
 use std::process::exit;
+use std::thread;
+use std::time::Duration;
 
 //Structs
 
@@ -68,10 +70,11 @@ struct ServerConfigData {
     min_mem: i32,
     max_mem: i32,
     eula: bool,
+    running: bool,
     port: i32,
 }
 
-
+//fn main
 fn main() {
 
     init_silent();
@@ -89,6 +92,7 @@ fn main() {
 	println!("install: Download and install a server.jar from the Internet");
 	println!("help: Lists all Actions");
     println!("license: Shows all Information about licensing.");
+    println!("list: Shows all active Servers");
 	println!("newcfg: Generates a new config.toml");
 	println!("readcfg: Reads the current config.toml and prints them");
 	println!("source: Opens the projects Git Repository in your default Browser");
@@ -152,6 +156,7 @@ fn main() {
 				println!("install: Download and install a Server from the Internet");
 				println!("help: Lists all Actions");
                 println!("license: Shows all Information about licensing.");
+                println!("list: Shows all active Servers");
 				println!("newcfg: Generates a new config.toml");
 				println!("readcfg: Reads the current config.toml and prints them");
 				println!("source: Opens the projects Git Repository in your default Browser");
@@ -193,6 +198,9 @@ fn main() {
                 println!("These functions require agreeing to the Minecraft End User License Agreement (EULA).");
                 println!("For more information, please visit https://www.minecraft.net/en-us/eula.");
                 println!();
+            }
+            "list" => {
+                list_servers();
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
@@ -623,6 +631,12 @@ fn write_cfg(config: &Config, path: &str) {
     fs::write(path, toml_string)
         .expect("Failed to write config file");
 }
+fn write_server_toml(toml: &ServerConfigFile, path: &str) {
+    let toml_string = toml::to_string_pretty(toml)
+        .expect("Failed to serialize config to TOML");
+    fs::write(path, toml_string)
+        .expect("Failed to write config file");
+}
 
 fn check_os() -> String {
     let info = os_info::get();
@@ -835,19 +849,32 @@ if eula == true {
     let xms_arg = format!("-Xms{}M", mem_min);
     let xmx_arg = format!("-Xmx{}M", mem_max);
 
-    Command::new("java")
-        .args([
-        xms_arg,
-        xmx_arg,
-        "-jar".to_string(),
-        jar_path.to_str().unwrap().to_string(),
-        "nogui".to_string(),
-        ])
-        .current_dir(&command_path)
-        .output()
-        .expect("Failed to start Server");
+Command::new("java")
+    .args([
+        &xms_arg,
+        &xmx_arg,
+        "-jar",
+        jar_path.to_str().unwrap(),
+        "nogui",
+    ])
+    .current_dir(&command_path)
+    .stdout(Stdio::null())
+    .stderr(Stdio::null()) 
+    .spawn()
+    .expect("Failed to start Server");
 
-    return true;
+    thread::sleep(Duration::from_secs(5));
+
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+    
+    if jps_str.contains(&command_path.to_string_lossy().to_string().to_lowercase()) {
+        return true;
+    } else {
+        return false;
+    }
+
+    
 } else {return false;}
 }
 
@@ -954,25 +981,25 @@ fn start_toml() {
             let server_toml_path = cfg_app_data.server_list.server_list["server1"].clone();
             println!("{}", server_toml_path);
 
-            let cfg_server_str = fs::read_to_string(server_toml_path)
+            let cfg_server_str = fs::read_to_string(server_toml_path.clone())
             .expect("Could not read file");
-            let cfg_server_toml : ServerConfigFile =  toml::from_str(&cfg_server_str).expect("Could not parse TOML"); 
+            let mut cfg_server_toml : ServerConfigFile =  toml::from_str(&cfg_server_str).expect("Could not parse TOML"); 
 
             #[warn(unused_mut)]
             //is only here bc warn is kind of buggy
             let mut path_jar_str = String::new();
             if cfg_app_data.system.os_mini == "win" {
-                path_jar_str = cfg_server_toml.server_config.path_windows_jar;
+                path_jar_str = cfg_server_toml.server_config.path_windows_jar.clone();
             } else {
-                path_jar_str = cfg_server_toml.server_config.path_unix_jar;
+                path_jar_str = cfg_server_toml.server_config.path_unix_jar.clone();
             }
             #[warn(unused_mut)]
             //is only here bc warn is kind of buggy
             let mut path_dir_str = String::new();
             if cfg_app_data.system.os_mini == "win" {
-                path_dir_str = cfg_server_toml.server_config.path_windows_dir;
+                path_dir_str = cfg_server_toml.server_config.path_windows_dir.clone();
             } else {
-                path_dir_str = cfg_server_toml.server_config.path_unix_dir;
+                path_dir_str = cfg_server_toml.server_config.path_unix_dir.clone();
             }
             let mut agree_eula = cfg_server_toml.server_config.eula;
             
@@ -1020,7 +1047,19 @@ fn start_toml() {
 
             println!("Starting Server...");
             
-            start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
+            let has_server_started = start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
+            
+            if has_server_started == true {
+                println!("Server started sucessfully!");
+                cfg_server_toml.server_config.running = has_selected_server;
+                write_server_toml(&cfg_server_toml, &server_toml_path);
+                
+            } else {
+                println!("An Error occured when starting the server!");
+                println!("Consider running:");
+                println!("java -Xmx{}M -Xms{}M -jar {}", mem_max, mem_min, path_to_jar.display());
+                println!("to diagnose the issue.");
+            }
         }
 } else {
     println!("No Server found!");
@@ -1038,4 +1077,16 @@ fn mk_path_absolute(input_path: &str) -> PathBuf {
         let current_dir = env::current_dir().expect("Failed to get current directory");
         std::fs::canonicalize(current_dir.join(path)).expect("Failed to canonicalize joined path")
     }
+}
+fn list_servers(){
+
+    //needs lots of work
+
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+    println!("{}", jps_str);
 }
