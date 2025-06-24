@@ -12,8 +12,9 @@ NO Multithreading + NO WebUI
 - Set Min and Max Ram [DONE]
 - Rework config file from app.cfg to config.toml [DONE]
 - Rewrite start_manual into 2 Functions [DONE]
-- Backup and creating / managing data directory
-- server TOML and config.toml parsing
+- server TOML and config.toml parsing [DONE]
+- stopping servers with jps -l and kill \<PID> or taskkill /PID \   <PID>
+- download all versions of mc java aswell as modloaders
 
 ## Stage 2
 
