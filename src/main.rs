@@ -83,6 +83,7 @@ struct ServerConfigData {
     max_mem: i32,
     eula: bool,
     running: bool,
+    pid: i32,
     port: i32,
 }
 
