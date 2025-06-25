@@ -83,7 +83,7 @@ struct ServerConfigData {
     max_mem: i32,
     eula: bool,
     running: bool,
-    pid: i32,
+    pid: String,
     port: i32,
 }
 
@@ -233,7 +233,6 @@ fn add_server() {
         io::stdin()
         .read_line(&mut input_path)
         .expect("Failed to read path");
-
         if input_path == "abort" {
             break;
         }
@@ -399,7 +398,7 @@ fn init_setup(is_cfg_regenerated: bool) {
             println!("Directory already exists!");  
             }
             Err(_) => {
-                fs::create_dir(default_server_dir).expect("Could not create directory");
+                fs::create_dir_all(default_server_dir).expect("Could not create directory");
             }
         }
 
@@ -846,7 +845,13 @@ fn start_manual() {
                     path_to_jar
                 );
 
-                start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula);
+                let (has_server_started, pid) = start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula);
+
+                if has_server_started == true {
+                    println!("Server started sucessfuly with ProcessID (PID) {}", pid);
+                } else {
+                    println!("Something went wrong while starting the server.");
+                }
                 
                 pathsearch = false;
             }
@@ -904,30 +909,29 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
         }
     } else if cfg_app_data.system.os_mini.to_lowercase().contains("linux") {
         #[cfg(unix)]
-        {
-            server = Some(
-                Command::new("java")
-                    .args([
-                        xms_arg,
-                        xmx_arg,
-                        "-jar".to_string(),
-                        jar_path.display().to_string(),
-                        "nogui".to_string(),
-                    ])
-                    .current_dir(command_path)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
-                    .before_exec(|| {
-                        unsafe {
-                            libc::setsid();
-                        }
-                        Ok(())
-                    })
-                    .spawn()
-                    .expect("Failed to spawn detached Java process"),
-            );
+        { unsafe {
+            let mut spawn_server = Command::new("java");
+            spawn_server.args([
+                xms_arg,
+                xmx_arg,
+                "-jar".to_string(),
+                jar_path.display().to_string(),
+                "nogui".to_string(),
+            ])
+            .current_dir(command_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
 
+            unsafe {
+                spawn_server.before_exec(|| {
+                    libc::setsid();
+                    Ok(())
+                });
+            }
+
+        server = Some(cmd.spawn().expect("Failed to spawn detached Java process"));
+        }
             thread::sleep(Duration::from_secs(5));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
@@ -1044,7 +1048,7 @@ fn start_toml() {
         println!("Selected {}", server_name);
 
         if cfg_app_data.server_list.server_list.contains_key(&server_name) == true {
-            let server_toml_path = cfg_app_data.server_list.server_list["server1"].clone();
+            let server_toml_path = cfg_app_data.server_list.server_list[&server_name].clone();
             println!("{}", server_toml_path);
 
             let cfg_server_str = fs::read_to_string(server_toml_path.clone())
@@ -1118,6 +1122,7 @@ fn start_toml() {
             if has_server_started == true {
                 println!("Server started sucessfully!");
                 cfg_server_toml.server_config.running = has_selected_server;
+                cfg_server_toml.server_config.pid = server_pid;
                 write_server_toml(&cfg_server_toml, &server_toml_path);
                 
             } else {
@@ -1174,6 +1179,7 @@ fn create_server_toml(
 
     let mut server_toml = File::create(toml_path).expect("Could not create file");
 
+    //set eula, active and pid as either false or "" depending on type
     server_toml.write_all("e".as_bytes())
     .expect("Could not write to file");
     
