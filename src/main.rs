@@ -1,30 +1,116 @@
-//use std::fmt::Error;
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap};
+use std::env;
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use std::process::Command;
-//use json::stringify;
+use std::process::{Command, Stdio};
+use dir::{home_dir};
 use std::process::exit;
+use std::{thread, time::Duration};
+#[cfg(unix)]
+use libc;
+use std::process::Child;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 
+
+//Consts
+
+//Used for spawning java on Windows
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+//Structs
+
+//Structs for config file
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Config {
+    title: String,
+    system: System,
+    storage: Storage,
+    #[serde(default)]
+    server_list: Servers,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct System {
+    os: String,
+    os_mini: String,
+    servers: i32,
+    after_initial_setup: bool,
+    data_path: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Storage {
+    use_default_server_dir: bool,
+    directory: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Servers {
+    #[serde(default)]
+    server_list: HashMap<String, String>,
+}
+impl Default for Servers {
+    fn default() -> Self {
+        Servers {
+            server_list: HashMap::new(),
+        }
+    }
+}
+
+
+// Structs for a server config file
+#[derive(Serialize, Deserialize, Debug)]
+struct ServerConfigFile {
+    title: String,
+    server_config: ServerConfigData,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct ServerConfigData {
+    name: String,
+    version: String,
+    modloader: String,
+    path_windows_dir: String,
+    path_unix_dir: String,
+    path_windows_jar: String,
+    path_unix_jar: String,   
+    min_mem: i32,
+    max_mem: i32,
+    eula: bool,
+    running: bool,
+    pid: String,
+    port: i32,
+}
+
+//fn main
 fn main() {
+
+    init_silent();
 
     println!("Welcome to the CLI MC-Server Management");
     println!("What would you like to do?");
     println!();
     println!("Actions: ");
     println!("abort: Exits the Application");
-    println!("add: Adds a Server via a JSON File");
+    println!("about: Shows Information about the Application");
+    println!("add: Adds a Server via a TOML File");
     println!("check: Checks if Java is installed on the System");
-    println!("exit: Exits the Application");
-    println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
-    println!("install: Install a Server from the Internet");
-    println!("help: Lists all Actions");
-    println!("newcfg: Generates a new app.cfg");
-    println!("readcfg: reads the current app.cfg");
-    println!("source: Opens Git Repository in your default Browser");
-    println!("start: Start a Server");
-    println!("startjar: Start a Server from a .jar file");
-    
+	println!("exit: Exits the Application");
+	println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
+	println!("install: Download and install a server.jar from the Internet");
+	println!("help: Lists all Actions");
+    println!("license: Shows all Information about licensing.");
+    println!("list: Shows all active Servers");
+	println!("newcfg: Generates a new config.toml");
+	println!("readcfg: Reads the current config.toml and prints them");
+	println!("source: Opens the projects Git Repository in your default Browser");
+	println!("start: Start a Server");
+	println!("startjar: Start a Server from a .jar file");
 
     loop {
         print!("> ");
@@ -44,6 +130,18 @@ fn main() {
                 println!("Exiting application.");
                 exit(0);
             }
+            "about" => {
+                println!();
+                println!("mc-server-manager");
+                println!();
+                println!("Developed by:");
+                print!("Delfi-CH - ");
+                println!("https://delfi.dev/");
+                println!();
+                println!("This program is licensed under the terms of the GNU General Public License Version 3.");
+                println!("For more information, run the license action.");
+                println!();
+            }
             "add" => {
                 add_server();
             }
@@ -58,25 +156,28 @@ fn main() {
                 init();
             }
             "install" => {
-                println!("install: not yet implemented");
+                download_server();
             }
             "help" => {
-                println!("Actions: ");
-                println!("abort: Exits the Application");
-                println!("add: Adds a Server via a JSON File");
-                println!("check: Checks your OS and JDK for compatability");
-                println!("exit: Exits the Application");
-                println!("init: Looks for a app.cfg file. If this file isnt found, it creats it");
-                println!("install: Install a Server from the Internet");
-                println!("help: Lists all Actions");
-                println!("newcfg: Generates a new app.cfg");
-                println!("readcfg: reads the current app.cfg");
-                println!("source: Opens Git Repository in your default Browser");
-                println!("start: Start a Server");
-                println!("startjar: Start a Server from a .jar file");
+				println!("Actions: ");
+				println!("abort: Exits the Application");
+                println!("about: Shows Information about the Application");
+				println!("add: Adds a Server via a TOML File");
+				println!("check: Checks if Java is installed on the System");
+				println!("exit: Exits the Application");
+				println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
+				println!("install: Download and install a Server from the Internet");
+				println!("help: Lists all Actions");
+                println!("license: Shows all Information about licensing.");
+                println!("list: Shows all active Servers");
+				println!("newcfg: Generates a new config.toml");
+				println!("readcfg: Reads the current config.toml and prints them");
+				println!("source: Opens the projects Git Repository in your default Browser");
+				println!("start: Start a Server");
+				println!("startjar: Start a Server from a .jar file");
             }
             "start" => {
-                println!("start: not yet implemented");
+                start_toml();
             }
             "startjar" => {
                 start_manual();
@@ -102,6 +203,22 @@ fn main() {
                 eprintln!("Failed to open browser: {}", e);
                 }
             }
+            "license" => {
+                println!();
+                println!("This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).");
+                println!("For more information, please visit https://www.gnu.org/licenses/gpl-3.0");
+                println!("However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.");
+                println!("These functions require agreeing to the Minecraft End User License Agreement (EULA).");
+                println!("For more information, please visit https://www.minecraft.net/en-us/eula.");
+                println!();
+            }
+            "list" => {
+                list_servers();
+            }
+            //will be removed in non dev builds
+            "dev" => {
+                create_server_toml("dev.toml".to_string(), "dev".to_string(), "1.21.6".to_string(), "vanilla".to_string(), "C:\\Privat\\Programming\\Rust\\mc_server_panel\\testdata\\vanilla-latest-dev\\".to_string(), "/mnt/c/dunno".to_string(), "C:\\Privat\\Programming\\Rust\\mc_server_panel\\testdata\\vanilla-latest-dev\\server.jar".to_string(), "/mnt/c/dunno/server.jar".to_string(), 256, 4096, 25565);
+            }
             _ => {
                 println!("'{}' is not a valid Action", input);
             }
@@ -111,31 +228,93 @@ fn main() {
 
 fn add_server() {
     loop {
-        println!("Enter file path: ");
+        println!("Enter file path:");
         println!("Type abort to exit.");
         print!("-> ");
-        io::stdout().flush().unwrap();
+            io::stdout().flush().expect("Failed to flush stdout");
 
         let mut input_path = String::new();
-
         io::stdin()
-            .read_line(&mut input_path)
-            .expect("Failed to read path");
-
-        let path = input_path.trim();
-
-        if path == "abort" {
+        .read_line(&mut input_path)
+        .expect("Failed to read path");
+        if input_path == "abort" {
             break;
         }
 
-        let filetype = Path::new(path)
-            .extension()
-            .and_then(|ext| ext.to_str());
+        let path = input_path.trim();
 
-        if filetype == Some("json") {
-            match fs::read_to_string(path) {
-                Ok(_contents_string) => {
-                    println!("File is JSON");
+        if path.to_lowercase() == "abort" {
+            break;
+        }
+        let full_path = mk_path_absolute(path);
+
+        let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
+
+        if filetype == Some("toml") {
+            match fs::read_to_string(&full_path) {
+                Ok(contents_string) => {
+                    println!("File is a toml file");
+
+                    if !contents_string.contains("[server_config]") {
+                        println!("File is not a valid Server configuration file!");
+                        println!("Try again");
+                        continue;
+                    }
+
+                    let cfg_data_str = read_cfg_silent();
+                    let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
+                        Ok(cfg) => cfg,
+                        Err(e) => {
+                            eprintln!("Could not parse config.toml: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let server_toml_str = match fs::read_to_string(&full_path) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            eprintln!("Failed to read server config file: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let server_toml_toml: ServerConfigFile = match toml::from_str(&server_toml_str) {
+                        Ok(srv) => srv,
+                        Err(e) => {
+                            eprintln!("Could not parse server config TOML: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let is_windows = cfg_data_toml.system.os_mini == "win";
+
+                    let jar_path = if is_windows {
+                        &server_toml_toml.server_config.path_windows_jar
+                    } else {
+                        &server_toml_toml.server_config.path_unix_jar
+                    };
+
+                    if let Err(_) = fs::metadata(jar_path) {
+                        println!("No server.jar found at the specified path: {}", jar_path);
+                        continue;
+                    }
+
+                    let mut server_list = cfg_data_toml.server_list.server_list.clone();
+
+                    let mut server_count = cfg_data_toml.system.servers;
+                    server_count += 1;
+
+                    let key = format!("server{}", server_count);
+                    let path_str = full_path.display().to_string();
+                    let clean_path = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
+                    server_list.insert(key, clean_path.to_string());
+
+                    cfg_data_toml.system.servers = server_count;
+                    cfg_data_toml.server_list.server_list = server_list;
+
+                    write_cfg(&cfg_data_toml, "config.toml");
+                    println!("Server added successfully.");
+
                     break;
                 }
                 Err(e) => {
@@ -144,64 +323,171 @@ fn add_server() {
                 }
             }
         } else {
-            println!("File is not JSON! Please enter a Path to a JSON file.");
+            println!("File is not TOML! Please enter a path to a TOML file.");
         }
     }
 }
 
-    /* let output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(["/C", "echo hello"])
-            .output()
-            .expect("Failed to execute process")
-    } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg("echo hello")
-            .output()
-            .expect("Failed to execute process")
-    };
-
-    let hello = String::from_utf8_lossy(&output.stdout);
-    println!("Command Output: {}", hello.trim());
-
-    */
 fn init() {
-    match fs::read("app.cfg") {
+    match fs::read("config.toml") {
         Ok(_) => {
-            println!("Found app.cfg");
+            println!("Found config.toml");
+            
         }
         Err(_) => {
-            println!("app.cfg wasn't found, creating it...");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(
-            check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0");
-            println!("Finished!");
+            new_cfg();
+        }
+    }
+    init_setup(false);
+}
+
+fn init_setup(is_cfg_regenerated: bool) {
+    let cfg_data_str = read_cfg_silent();
+    let mut cfg_data_toml: Config = toml::from_str(&cfg_data_str)
+    .expect("Could not parse TOML");
+    if cfg_data_toml.system.after_initial_setup == false {
+
+        //Set flags for initial setup
+        let mut after_inital_setup = false;
+        let mut server_dir_set = false;
+
+        if is_cfg_regenerated == false {
+        println!("Welcome to the CLI MC-Server Management");
+        println!("Since this is the first time running the Application, we need to do some configuration.");
+
+        let mut data_dir: PathBuf = home_dir().expect("Could not find home directory");
+        data_dir.push(".mc-server-manager");
+        cfg_data_toml.system.data_path = data_dir.to_string_lossy().to_string();
+        write_cfg(&cfg_data_toml, "config.toml");
+        
+        println!("Creating data directory...");
+        match fs::metadata(&data_dir) {
+            Ok(_) => {
+            println!("Directory already exists!");  
+            }
+            Err(_) => {
+                fs::create_dir(data_dir).expect("Could not create directory");
+            }
+        }
+        
+        
+
+        } else {
+            println!("After regenerating the configuration file, you need to set some configuration.");
+        }
+        println!("Do you want to use the default directory for storing servers?");
+        println!("This is either C:\\Users\\[your username]\\.mc-server-manager\\servers on Windows or /home/[your username]/.mc-server-manager/servers on Linux");
+        println!("y/n");
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Could not read the Input");
+
+        let input= input.to_lowercase();
+        let input = input.trim();
+
+        println!("{}", input);
+
+        if input == "y" {
+
+            let mut default_server_dir: PathBuf = home_dir().expect("Could not find home directory");
+            default_server_dir.push(".mc-server-manager/servers");
+            println!("Setting server directory to the default Value ({})", default_server_dir.to_string_lossy());
+            cfg_data_toml.storage.use_default_server_dir = true;
+            cfg_data_toml.storage.directory = default_server_dir.to_string_lossy().to_string();
+            write_cfg(&cfg_data_toml, "config.toml");
+            server_dir_set = true;
+            match fs::metadata(&default_server_dir) {
+            Ok(_) => {
+            println!("Directory already exists!");  
+            }
+            Err(_) => {
+                fs::create_dir_all(default_server_dir).expect("Could not create directory");
+            }
+        }
+
+        } else if input == "n" {
+
+        let mut is_path_set = false;
+
+        while is_path_set == false {
+            
+
+        println!("Please enter the directory where the servers will be stored.");
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Could not read the Input");
+
+        let input= input.to_lowercase();
+        let input = input.trim();
+
+        match fs::metadata(input) {
+        Ok(_) => {
+            println!("Setting server directory to {}.", input);
+            cfg_data_toml.storage.use_default_server_dir = false;
+            cfg_data_toml.storage.directory = input.to_string();
+            write_cfg(&cfg_data_toml, "config.toml");
+            is_path_set = true;
+            server_dir_set = true;
+        }
+        Err(_) => {
+            println!("{} is not a valid directory!", input);
+        } 
+    }
+    }
+        } else {
+            println!("Not a valid Input!");
+        }
+    
+    if server_dir_set == true {
+        after_inital_setup = true;
+    }
+
+    if after_inital_setup == true {
+        cfg_data_toml.system.after_initial_setup = true;
+        write_cfg(&cfg_data_toml, "config.toml");
+        println!("Initial Setup Complete!");
+    }
+
+    } else {
+        return;
+    }
+}
+
+fn init_silent() {
+    match fs::read("config.toml") {
+        Ok(_) => {
+            init_setup(false);
+        }
+        Err(_) => {
+            new_cfg_silent();
+            init_setup(false);
         }
     }
 }
 
 fn new_cfg(){
-    match fs::read("app.cfg") {
+    match fs::read("config.toml") {
         Ok(_) => {
-            println!("Found app.cfg");
-            println!("Removing app.cfg...");
-            fs::remove_file("app.cfg").expect("Could not delete file");
-            println!("Creating new app.cfg...");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0");
+            println!("Found config.toml");
+            println!("Removing config.toml...");
+            fs::remove_file("config.toml").expect("Could not delete file");
+            println!("Creating new config.toml...");
+            new_cfg_silent();
             println!("Finished!");
         }
         Err(_) => {
-            println!("app.cfg wasn't found, creating it...");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-            println!("Servers: 0");
+            println!("config.toml wasn't found, creating it...");
+            new_cfg_silent();
             println!("Finished!");
         }
     }
@@ -209,23 +495,98 @@ fn new_cfg(){
 
 fn new_cfg_silent(){
     // same as fn new_cfg, but doesnt print output
-    match fs::read("app.cfg") {
+    match fs::read("config.toml") {
         Ok(_) => {
-            fs::remove_file("app.cfg").expect("Could not delete file");
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            fs::remove_file("config.toml").expect("Could not delete file");
+            let mut cfg_file = File::create("config.toml").expect("Could not create file");
+            cfg_file
+                .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("title = \"mc-server-manager_config\"\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[system]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("after_initial_setup = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("data_path = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[storage]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("use_default_server_dir = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("directory = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[servers]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("server_list = {}\n".as_bytes())
+                .expect("Could not write to file");
         }
         Err(_) => {
-            let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-            cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-            cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
+            let mut cfg_file = File::create("config.toml").expect("Could not create file");
+            cfg_file
+                .write_all("# Config for mc-server-management\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("title = \"mc-server-manager_config\"\n\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[system]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os = \"{}\" \n", check_os().trim()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("os_mini = \"{}\" \n", check_os_mini().trim()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("servers = 0\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("after_initial_setup = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("data_path = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[storage]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("use_default_server_dir = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("directory = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("[servers]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("server_list = {}\n".as_bytes())
+                .expect("Could not write to file");
         }
     }
+    init_setup(true);
 }
 
 fn read_cfg() {
-    match File::open("app.cfg") {
+    match File::open("config.toml") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
             if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
@@ -233,16 +594,16 @@ fn read_cfg() {
                 return;
             }
             println!();
-            println!("Contents of app.cfg:");
+            println!("Contents of config.toml:");
             println!("-----------------------");
             println!("{}", app_cfg_content);
             println!("-----------------------");
             println!();
         }
         Err(_) => {
-            println!("app.cfg not found!");
+            println!("config.toml not found!");
             println!();
-            println!("Would you like to generate a new app.cfg? (y/n)");
+            println!("Would you like to generate a new config.toml? (y/n)");
             print!("-> ");
             io::stdout().flush().unwrap();
 
@@ -256,12 +617,7 @@ fn read_cfg() {
             let read_cfg_yn = read_cfg_yn.trim();
             
             if read_cfg_yn == "y" {
-                println!("Creating new app.cfg...");
-                let mut cfg_file = File::create("app.cfg").expect("Could not create file");
-                cfg_file.write_all(check_os().as_bytes()).expect("Could not write to file");
-                cfg_file.write_all("Servers: 0".as_bytes()).expect("Could not write to file");
-                println!("Servers: 0");
-                println!("Finished!");
+                new_cfg();
             } else {
                 println!("Aborting...");
             }
@@ -271,7 +627,7 @@ fn read_cfg() {
 fn read_cfg_silent() -> String {
 
     // same as fn read_cfg, but doesnt print output
-    match File::open("app.cfg") {
+    match File::open("config.toml") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
             if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
@@ -282,8 +638,6 @@ fn read_cfg_silent() -> String {
             }
         }
         Err(_) => {
-            println!("app.cfg not found!");
-            println!("Generating new app.cfg...");
             new_cfg_silent();
             let return_error_statement = "rerun";
             return return_error_statement.to_string();        
@@ -291,24 +645,45 @@ fn read_cfg_silent() -> String {
     }
 }
 
+fn write_cfg(config: &Config, path: &str) {
+    let toml_string = toml::to_string_pretty(config)
+        .expect("Failed to serialize config to TOML");
+    fs::write(path, toml_string)
+        .expect("Failed to write config file");
+}
+fn write_server_toml(toml: &ServerConfigFile, path: &str) {
+    let toml_string = toml::to_string_pretty(toml)
+        .expect("Failed to serialize config to TOML");
+    fs::write(path, toml_string)
+        .expect("Failed to write config file");
+}
+
 fn check_os() -> String {
     let info = os_info::get();
-    let os_info = format!("OS: {}\n", info);
-    //println!("OS information: {}", os_info);
+    let os_info = format!("{}", info);
     os_info
 }
 
-fn check_java() -> (String, bool) {
-    let mut os_name = read_cfg_silent();
-    while os_name == "rerun" {
-        os_name = read_cfg_silent();
-    }
+fn check_os_mini() -> String {
+    //Works the same as check_os, but writes a short name (e.g. win, linux)
+    let info = os_info::get();
 
-    let platform = if os_name.contains("Windows") {
+
+    let os_mini = if info.to_string().contains("Windows") {
         "win"
     } else {
         "unix"
     };
+
+    let os_info_mini = format!("{}", os_mini);
+    os_info_mini
+}
+
+fn check_java() -> bool {
+    let mut os_name = read_cfg_silent();
+    while os_name == "rerun" {
+        os_name = read_cfg_silent();
+    }
 
     let output = Command::new("java")
         .args(&["-version"])
@@ -331,12 +706,12 @@ fn check_java() -> (String, bool) {
         println!("Java wasn't found or is missing!");
     }
 
-    (platform.to_string(), has_java)
+    has_java
 }
 
 fn check_java_silent() -> bool{ 
     let mut os_name = read_cfg_silent();
-    let mut has_java = false;
+    let has_java:bool;
     while os_name == "rerun" {
             os_name = read_cfg_silent();
     }
@@ -394,7 +769,7 @@ fn start_manual() {
         let mut path_to_jar = String::new();
         io::stdin()
             .read_line(&mut path_to_jar)
-            .expect("Could not read the Input");
+            .expect("Could not read the input");
 
         let path_to_jar = path_to_jar.trim();
 
@@ -402,245 +777,453 @@ fn start_manual() {
             break;
         }
 
-
         match fs::read(path_to_jar) {
             Ok(_) => {
-
-                let java = check_java_silent();
-
-                pathsearch = false;
-
-                if java {
-                    let os_type = check_os();
-
-                    if os_type.to_lowercase().contains("windows") {
-                        let command_path_jar = Path::new(path_to_jar);
-
-                        let command_path: PathBuf = match command_path_jar.parent() {
-                            Some(parent) => parent.to_path_buf(),
-                            None => {
-                                println!("Could not determine the directory of the jar file.");
-                                continue;
-                            }
-                        };
-                        //Does all the EULA Stuff
-                        let mut agree_eula = false;
-
-                        let eula_path_buf = {
-                        let eula_path = Path::new(path_to_jar);
-                        match eula_path.parent() {
-                            Some(parent) => parent.join("eula.txt"),
-                            None => {
-                         println!("Could not find EULA.txt.");
-                        continue;
-                        }
-                    }
-                    };
-
-                    let eula_contents = fs::read_to_string(&eula_path_buf)
-                        .expect("Should have been able to read the file");
-                    if eula_contents.contains("eula = true") {
-                        agree_eula = true;
-                    } else {
-                        while agree_eula == false {
-                        println!("Do you agree to the Minecraft EULA?");
-                        println!("https://www.minecraft.net/en-us/eula");
-                        println!("y/n/open");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        
-                        let mut agree_eula_input = String::new();
-
-                        io::stdin()
-                            .read_line(&mut agree_eula_input)
-                            .expect("Could not read the Input");
-                        let agree_eula_input = agree_eula_input.trim().to_lowercase();
-                        
-                        if agree_eula_input == "y" {
-                            agree_eula = true;
-                        } else if agree_eula_input == "n" {
-                            break;
-                        } else if agree_eula_input == "open" {
-                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
-                            eprintln!("Failed to open browser: {}", e);
-                            }
-                        } else {
-                            println!("Not a valid Input");
-                        }
-                    }
-                }
-                    if agree_eula == true {
-
-                        let eula_path = command_path.join("eula.txt");
-
-                        let _eula = fs::write(eula_path, "eula = true");
-
-                        println!("Running server in directory: {}", command_path.display());
-
-                        //Add Maximum and Minimum Mem here
-
-                        println!("Set the minimum mmount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-
-                        let mut min_mem_input = String::new();
-                        io::stdin().read_line(&mut min_mem_input).unwrap();
-                        let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
-
-                        println!("Set the maximum amount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        let mut max_mem_input = String::new();
-                        io::stdin().read_line(&mut max_mem_input).unwrap();
-                        let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
-
-                        let xms_arg = format!("-Xms{}M", min_mem_int);
-                        let xmx_arg = format!("-Xmx{}M", max_mem_int);
-                        
-
-
-                            let output = Command::new("java")
-                            .args(&[
-                                &xms_arg,
-                                &xmx_arg,
-                                "-jar",
-                                command_path_jar.to_str().unwrap(),
-                                "nogui",
-                            ])
-                            .current_dir(&command_path)
-                            .output()
-                            .expect("Failed to start Server");
-
-                        println!("Running: java {} {} -jar {} nogui", xmx_arg, xms_arg, path_to_jar);
-
-                        let server_log = String::from_utf8_lossy(&output.stderr);
-                        println!("{}", server_log);
-                            } else {
-                                break;
-                            }
-                    } else {
-                        let mut agree_eula = false;
-
-                        let eula_path_buf = {
-                        let eula_path = Path::new(path_to_jar);
-                        match eula_path.parent() {
-                            Some(parent) => parent.join("eula.txt"),
-                            None => {
-                         println!("Could not find EULA.txt.");
-                        continue;
-                        }
-                    }
-                    };
-
-                    let eula_contents = fs::read_to_string(&eula_path_buf)
-                        .expect("Should have been able to read the file");
-                    if eula_contents.contains("eula = true") {
-                        agree_eula = true;
-                    } else {
-                        while agree_eula == false {
-                        println!("Do you agree to the Minecraft EULA?");
-                        println!("https://www.minecraft.net/en-us/eula");
-                        println!("y/n/open");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        
-                        let mut agree_eula_input = String::new();
-
-                        io::stdin()
-                            .read_line(&mut agree_eula_input)
-                            .expect("Could not read the Input");
-                        let agree_eula_input = agree_eula_input.trim().to_lowercase();
-                        
-                        if agree_eula_input == "y" {
-                            agree_eula = true;
-                        } else if agree_eula_input == "n" {
-                            break;
-                        } else if agree_eula_input == "open" {
-                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
-                            eprintln!("Failed to open browser: {}", e);
-                            }
-                        } else {
-                            println!("Not a valid Input");
-                        }
-                    }
-                }
-                        if agree_eula == true {
-                        let command_path_jar = Path::new(path_to_jar);
-
-                        let command_path: PathBuf = match command_path_jar.parent() {
-                            Some(parent) => parent.to_path_buf(),
-                            None => {
-                                println!("Could not determine the directory of the jar file.");
-                                continue;
-                            }
-                        };
-                        
-                        let eula_path = command_path.join("eula.txt");
-
-                        let _eula = fs::write(eula_path, "eula = true");
-
-                        println!("Running server in directory: {}", command_path.display());
-
-                        //Add Maximum and Minimum Mem here
-
-                        println!("Set the minimum mmount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-
-                        let mut min_mem_input = String::new();
-                        io::stdin().read_line(&mut min_mem_input).unwrap();
-                        let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
-
-                        println!("Set the maximum amount of RAM for the Server in MB");
-                        print!("-> ");
-                        io::stdout().flush().unwrap();
-
-                        let mut max_mem_input = String::new();
-                        io::stdin().read_line(&mut max_mem_input).unwrap();
-                        let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
-
-                        let xms_arg = format!("-Xms{}M", min_mem_int);
-                        let xmx_arg = format!("-Xmx{}M", max_mem_int);
-                        
-
-
-                            let output = Command::new("java")
-                            .args(&[
-                                &xms_arg,
-                                &xmx_arg,
-                                "-jar",
-                                command_path_jar.to_str().unwrap(),
-                                "nogui",
-                            ])
-                            .current_dir(&command_path)
-                            .output()
-                            .expect("Failed to start Server");
-
-                        println!("Running: java {} {} -jar {} nogui", xmx_arg, xms_arg, path_to_jar);
-
-                        let server_log = String::from_utf8_lossy(&output.stderr);
-                        println!("{}", server_log);
-                        } else {
-                            break;
-                        }
-                    }
-                } else {
+                if !check_java_silent() {
                     println!("Java wasn't found or is missing!");
+                    continue;
                 }
+
+                let command_path_jar = Path::new(path_to_jar);
+                let command_path = match command_path_jar.parent() {
+                    Some(parent) => parent.to_path_buf(),
+                    None => {
+                        println!("Could not determine the directory of the jar file.");
+                        continue;
+                    }
+                };
+
+                let eula_path = command_path.join("eula.txt");
+                let mut agree_eula = false;
+
+                if let Ok(contents) = fs::read_to_string(&eula_path) {
+                    if contents.contains("eula = true") {
+                        agree_eula = true;
+                    }
+                }
+
+                while !agree_eula {
+                    println!("Do you agree to the Minecraft EULA?");
+                    println!("https://www.minecraft.net/en-us/eula");
+                    println!("y/n/open");
+                    print!("-> ");
+                    io::stdout().flush().unwrap();
+
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).unwrap();
+                    let input = input.trim().to_lowercase();
+
+                    match input.as_str() {
+                        "y" => agree_eula = true,
+                        "n" => break,
+                        "open" => {
+                            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
+                                eprintln!("Failed to open browser: {}", e);
+                            }
+                        }
+                        _ => println!("Not a valid input"),
+                    }
+                }
+
+                if !agree_eula {
+                    break;
+                }
+
+                // Write agreement
+                let _ = fs::write(&eula_path, "eula = true");
+
+                println!("Set the minimum amount of RAM for the Server in MB");
+                print!("-> ");
+                io::stdout().flush().unwrap();
+                let mut min_mem_input = String::new();
+                io::stdin().read_line(&mut min_mem_input).unwrap();
+                let min_mem_int: u32 = min_mem_input.trim().parse().expect("Must be a number");
+
+                println!("Set the maximum amount of RAM for the Server in MB");
+                print!("-> ");
+                io::stdout().flush().unwrap();
+                let mut max_mem_input = String::new();
+                io::stdin().read_line(&mut max_mem_input).unwrap();
+                let max_mem_int: u32 = max_mem_input.trim().parse().expect("Must be a number");
+
+                println!(
+                    "Running: java -Xms{}M -Xmx{}M -jar {} nogui",
+                    min_mem_int,
+                    max_mem_int,
+                    path_to_jar
+                );
+
+                let (has_server_started, pid) = start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula);
+
+                if has_server_started == true {
+                    println!("Server started sucessfuly with ProcessID (PID) {}", pid);
+                } else {
+                    println!("Something went wrong while starting the server.");
+                }
+                
+                pathsearch = false;
             }
             Err(_) => {
-                println!("Path does not lead to a valid .jar File");
+                println!("Path does not lead to a valid .jar file.");
             }
         }
     }
 }
 
-/*fn start_generic(path: &Path, mem_min: i32, mem_max: i32, eula: bool) -> bool {
-    //TODO: EVERYTHING    
-    return true;
-}*/
+fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool) -> (bool, String) {
+    if !eula {
+        return (false, "no_start".to_string());
+    }
+
+    let xms_arg = format!("-Xms{}M", mem_min);
+    let xmx_arg = format!("-Xmx{}M", mem_max);
+
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str).expect("Could not parse TOML");
+
+    let mut server: Option<Child> = None;
+
+    if cfg_app_data.system.os.to_lowercase().contains("windows") {
+        #[cfg(windows)]
+        {
+            server = Some(
+                Command::new("java")
+                    .args([
+                        xms_arg,
+                        xmx_arg,
+                        "-jar".to_string(),
+                        jar_path.display().to_string(),
+                        "nogui".to_string(),
+                    ])
+                    .current_dir(command_path)
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()
+                    .expect("Failed to start Java process"),
+            );
+
+            thread::sleep(Duration::from_secs(5));
+
+            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+            if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+        }
+    } else if cfg_app_data.system.os_mini.to_lowercase().contains("linux") {
+        #[cfg(unix)]
+        { unsafe {
+            let mut spawn_server = Command::new("java");
+            spawn_server.args([
+                xms_arg,
+                xmx_arg,
+                "-jar".to_string(),
+                jar_path.display().to_string(),
+                "nogui".to_string(),
+            ])
+            .current_dir(command_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
+            unsafe {
+                spawn_server.before_exec(|| {
+                    libc::setsid();
+                    Ok(())
+                });
+            }
+
+        server = Some(spawn_server.spawn().expect("Failed to spawn detached Java process"));
+        }
+            thread::sleep(Duration::from_secs(5));
+
+            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+            if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+        }
+    }
+
+    (false, "no_start".to_string())
+}
+
+fn download_server() {
+    let mut agree_eula = false;
+    println!("Do you want to download the official Minecraft server.jar from https://www.minecraft.net/en-us/download/server?");
+    println!("Note, by downloading the server.jar, you automaticly agree to the Minecraft EULA");
+    while agree_eula == false {
+        println!("Do you agree to the Minecraft EULA?");
+        println!("https://www.minecraft.net/en-us/eula");
+        println!("y/n/show");
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+                        
+        let mut agree_eula_input = String::new();
+
+        io::stdin()
+        .read_line(&mut agree_eula_input)
+        .expect("Could not read the Input");
+        let agree_eula_input = agree_eula_input.trim().to_lowercase();
+                        
+        if agree_eula_input == "y" {
+            agree_eula = true;
+        } else if agree_eula_input == "n" {
+            break;
+        } else if agree_eula_input == "open" {
+            if let Err(e) = open::that("https://www.minecraft.net/en-us/eula") {
+            eprintln!("Failed to open browser: {}", e);
+            }
+        } else {
+        println!("Not a valid Input");
+        }
+        }
+
+    if agree_eula == true{
+        let mut download_path: PathBuf = home_dir().expect("Could not find home directory");
+        download_path.push("Downloads/server.jar");
+        println!("Downloading server.jar ...");
+        Command::new("curl")
+        .args(&[
+        "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar",
+        "-o",
+        download_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("Failed to download File");
+        println!("Finished!");
+    }
+        }
+        
+fn start_toml() {
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str).expect("Could not parse TOML");
+
+    if cfg_app_data.system.servers == 0 {
+        println!("No Server found!");
+        println!("Please add a Server via the add action.");
+        return;
+    }
+
+    let server_list_map: &HashMap<String, String> = &cfg_app_data.server_list.server_list;
+    let server_names: Vec<&String> = server_list_map.keys().collect();
+
+    println!("List of servers:\n");
+    for (i, server_name) in server_names.iter().enumerate() {
+        println!("{} => {}", i + 1, server_name);
+    }
+
+    println!("\nWhat server do you want to start?");
+    println!("Please enter a number.");
+    println!("Or type 'abort' to exit.");
+
+    let mut input = String::new();
+    let selected_server_name: &String;
+
+    loop {
+        print!("-> ");
+        io::stdout().flush().unwrap();
+
+        input.clear();
+        io::stdin().read_line(&mut input).expect("Could not read input");
+        let trimmed = input.trim().to_lowercase();
+
+        if trimmed == "abort" {
+            println!("Exiting starting process...");
+            return;
+        }
+
+        if let Ok(index) = trimmed.parse::<usize>() {
+            if index >= 1 && index <= server_names.len() {
+                selected_server_name = server_names[index - 1];
+                break;
+            } else {
+                println!("Invalid number, please select from the list.");
+            }
+        } else {
+            println!("Please enter a valid number.");
+        }
+    }
+
+    println!("Selected {}", selected_server_name);
+
+    if let Some(server_toml_path) = server_list_map.get(selected_server_name) {
+        println!("{}", server_toml_path);
+
+        let cfg_server_str =
+            fs::read_to_string(server_toml_path).expect("Could not read server config file");
+        let mut cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+        let (path_jar_str, path_dir_str) = if cfg_app_data.system.os_mini == "win" {
+            (
+                cfg_server_toml.server_config.path_windows_jar.clone(),
+                cfg_server_toml.server_config.path_windows_dir.clone(),
+            )
+        } else {
+            (
+                cfg_server_toml.server_config.path_unix_jar.clone(),
+                cfg_server_toml.server_config.path_unix_dir.clone(),
+            )
+        };
+
+        let mut agree_eula = cfg_server_toml.server_config.eula;
+        let eula_path = format!("{}eula.txt", path_dir_str);
+
+        if let Ok(contents) = fs::read_to_string(&eula_path) {
+            if contents.contains("eula = true") {
+                agree_eula = true;
+            }
+        }
+
+        if !agree_eula {
+            println!("Do you agree to the Minecraft EULA?");
+            println!("https://www.minecraft.net/en-us/eula");
+            println!("y/n/open");
+
+            loop {
+                print!("-> ");
+                io::stdout().flush().unwrap();
+
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                let input = input.trim().to_lowercase();
+
+                match input.as_str() {
+                    "y" => {
+                        agree_eula = true;
+                        break;
+                    }
+                    "n" => {
+                        println!("You must agree to the EULA to start the server.");
+                        return;
+                    }
+                    "open" => {
+                        if let Err(e) =
+                            open::that("https://www.minecraft.net/en-us/eula")
+                        {
+                            eprintln!("Failed to open browser: {}", e);
+                        }
+                    }
+                    _ => println!("Not a valid input"),
+                }
+            }
+
+            let _ = fs::write(&eula_path, "eula = true");
+        }
+
+        let mem_min: u32 = cfg_server_toml.server_config.min_mem.try_into().unwrap();
+        let mem_max: u32 = cfg_server_toml.server_config.max_mem.try_into().unwrap();
+
+        let path_to_jar = Path::new(&path_jar_str);
+        let path_server_dir = Path::new(&path_dir_str);
+
+        println!("Starting Server...");
+
+        let (has_server_started, server_pid) =
+            start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
+
+        if has_server_started {
+            println!("Server started successfully!");
+            cfg_server_toml.server_config.running = true;
+            cfg_server_toml.server_config.pid = server_pid;
+            write_server_toml(&cfg_server_toml, &server_toml_path);
+        } else {
+            println!("An error occurred while starting the server!");
+            println!(
+                "Try running:\njava -Xmx{}M -Xms{}M -jar {}",
+                mem_max,
+                mem_min,
+                path_to_jar.display()
+            );
+        }
+    } else {
+        println!("Server not found in config.");
+    }
+}
+
+
+fn mk_path_absolute(input_path: &str) -> PathBuf {
+    let path = Path::new(input_path);
+
+    if path.is_absolute() {
+        std::fs::canonicalize(path).expect("Failed to canonicalize absolute path")
+    } else {
+        let current_dir = env::current_dir().expect("Failed to get current directory");
+        std::fs::canonicalize(current_dir.join(path)).expect("Failed to canonicalize joined path")
+    }
+}
+fn list_servers(){
+
+    //needs lots of work
+
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+    println!("{}", jps_str);
+}
+
+fn create_server_toml(
+    toml_path: String,     
+    name: String,
+    version: String,
+    modloader: String,
+    path_windows_dir: String,
+    path_unix_dir: String,
+    path_windows_jar: String,
+    path_unix_jar: String,   
+    min_mem: i32,
+    max_mem: i32,
+    port: i32,)  {
+
+    //also needs work
+
+    let mut server_toml = File::create(toml_path).expect("Could not create file");
+
+    server_toml.write_all("title = \"server_config\"\n".as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all("\n".as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all("[server_config]\n".as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("name = \"{}\" \n", name.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("version = \"{}\" \n", version.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("modloader = \"{}\" \n", modloader.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("path_windows_dir = \'{}\' \n", path_windows_dir.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("path_windows_jar = \'{}\' \n", path_windows_jar.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("path_unix_dir = \'{}\' \n", path_unix_dir.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("path_unix_jar = \'{}\' \n", path_unix_jar.trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("min_mem = {} \n", min_mem.to_string().trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("max_mem = {} \n", max_mem.to_string().trim()).as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all("eula = false\n".as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all("running = false\n".as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all("pid = \"\"\n".as_bytes())
+    .expect("Could not write to file");
+    server_toml.write_all(format!("port = {} \n", port.to_string().trim()).as_bytes())
+    .expect("Could not write to file");
+
+    
+}

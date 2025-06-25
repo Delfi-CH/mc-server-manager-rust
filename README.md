@@ -5,12 +5,13 @@ rust tool for managing multiple selfohosted minecraft servers
 CURRENTLY WORK IN PROGRESS!
 DO NOT USE
 NOT ALL FEATURES ARE IMPLEMENTED
+FOR MORE INFO SEE [HERE](https://github.com/Delfi-CH/mc-server-management/blob/main/TODO.md)
 
 ## Requirements
 
 ### Processor:
 
-x86-64 based Processor (Intel/Amd)
+x86-64 based Processor (Intel/AMD)
 
 ### RAM:
 
@@ -37,7 +38,7 @@ Recommended: 8 Gigabytes and more.
 
 #### **RedHat-based:**
 
-- Fedora 42 or higher
+- Fedora 41 or higher
 - RHEL 9 or higher
 - "RHEL-Clone (Oracle Linux, AlmaLinux, etc..)" compatible with RHEL 9 or higher
 
@@ -74,7 +75,7 @@ Supported Java Runtimes:
   - Click **New** and paste the path to the `bin` directory.
   - Click **OK** to apply the changes.
 
-- Open **Command Prompt** (or any terminal).
+- Open **Command Prompt**.
 - Run the following command:
 
   ```bash
@@ -106,7 +107,7 @@ Supported Java Runtimes:
   sudo dnf install java
   ```
 
-  **Arch  Linux:**
+  **Arch Linux:**
   
    ```bash
   sudo pacman -Syu jdk-openjdk
@@ -125,6 +126,7 @@ Supported Java Runtimes:
   **openSUSE:**
   
    ```bash
+  sudo zypper update
   sudo zypper refresh
   sudo zypper search openjdk
   sudo zypper install java-[PREFERED-VERSION-HERE]-openjdk
@@ -136,17 +138,93 @@ Supported Java Runtimes:
   java -version
   ```
 
+## Minecraft Support
 
+### Game Versions
 
-## Exit Codes
+ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 
-- Exit Code 0: User terminated the Application.
+- Version 1.21.x
+    - 1.21.6
+    - 1.21.5
+    - 25w14craftmine (April Fools)
+    - 1.21.4
+    - 1.21.3
+    - 1.21.1
+- Minecraft 1.20.x
+  - 1.20.6
+  - 24w14potato (April Fools)
+  - 1.20.4
+  - 1.20.2
+  - 1.20.1 (pre Villager Rebalancing)
+  - 23w13a_or_b (April Fools)
+- Minecraft 1.19.x
+  - 1.19.4
+  - 22w13oneBlockAtATime (April Fools)
+- Minecraft 1.18.x
+  - 1.18.2
+- Minecraft 1.17.x
+  - 1.17.1
+- Minecraft 1.16.x
+  - 1.16.5
+  - 1.16.2
+  - 1.16.1
+  - 20w14infinite (April Fools)
+- Minecraft 1.15.x
+  - 1.15.2
+- Minecraft 1.14.x
+  - 1.14.4
+  - 3D Shareware v1.34 (April Fools)
+- Minecraft 1.13.x
+  - 1.13.2
+- Minecraft 1.12.x
+  - 1.12.2
+- Minecraft 1.9.x - 1.11.x
+  - 1.11.2
+  - 1.10.2
+  - 1.9.4
+  - 1.RV-Pre1 (April Fools)
+- Minecraft 1.7.x - 1.8.x
+  - 1.8.9
+  - 15w14a (April Fools)
+  - 1.7.10
+
+- Minecraft 1.0.x - 1.7.x
+    - We currently dont support these versions.
+
+### Modloaders
+
+- Forge:
+  - Minecraft 1.7.10 - 1.21.6
+- NeoForge:
+  - Minecraft 1.20.2 - 1.21.6
+- Fabric
+  - Minecraft 1.14.4 - 1.21.6
+- Quilt
+  - Minecraft 1.18.2 - 1.21.6
+
+## Configuration
+
+For configuring the app, TOML (Tom's Obvious Minimal Language) is beeing used. You can read more about it [here](https://toml.io/)
 
 ## FAQ
 
-- Q: I have Java installed, but i get "Java wasn't found or is missing!"
-- A: Check if Java is in your PATH variable. You can do this by typing
-    ```bash
-  java -version
-  ```
--   in a Terminal
+- Q: I have Java installed, but i get something like "Java wasn't found or is missing!"
+- A: Check if Java is in your PATH variable. You can do this by running ```java -version```in a Terminal
+- Q: Is this affiliated or endorsed by Mojang / Microsoft?
+- A: No, this Software is not affiliated, endorsed or connected to Mojang  and/or Microsoft.
+
+
+## Compiling it yourself
+
+See [here](https://github.com/Delfi-CH/mc-server-management/blob/main/COMPILING.md)
+
+## Legal
+
+THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
+
+This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).
+For more information, please visit https://www.gnu.org/licenses/gpl-3.0
+However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.
+These functions require agreeing to the Minecraft End User License Agreement (EULA).
+For more information, please visit https://www.minecraft.net/en-us/eula.

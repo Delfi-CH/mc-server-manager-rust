@@ -1,9 +1,13 @@
 [package]
 name = "mc_server_panel"
-version = "0.0.2"
+version = "0.0.7"
 edition = "2024"
 
+
 [dependencies]
-json = "0.12.4"
+dir = "0.1.2"
 open = "5.3.2"
 os_info = "3.11.0"
+toml = "0.8.23"
+serde = { version = "1.0", features = ["derive"] }
+libc = "0.2.174"

@@ -1,4 +1,10 @@
 /target
 app.cfg
+config.toml
+example.toml
+example*.toml
+*.bkp
+*drawio*
 /testing
 /.idea
+dev.*
