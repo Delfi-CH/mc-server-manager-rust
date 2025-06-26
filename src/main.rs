@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
-use std::env;
+use std::env::{self};
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -473,6 +473,10 @@ fn init_setup(is_cfg_regenerated: bool) {
         println!("{}", input);
 
         if input == "y" {
+
+            let mut data_dir: PathBuf = home_dir().expect("Could not find home directory");
+            data_dir.push(".mc-server-manager");
+            cfg_data_toml.system.data_path = data_dir.to_string_lossy().to_string();
 
             let mut default_server_dir: PathBuf = home_dir().expect("Could not find home directory");
             default_server_dir.push(".mc-server-manager\\servers");
@@ -1093,6 +1097,40 @@ fn download_server() {
         dir_path = format!("{}/server{}", base_dir, new_server_id);
         }
 
+        //temp var
+        let version = "1.21.6";
+
+        let mut has_mcsvdl = false;
+
+        let mut dotpath: PathBuf = home_dir().expect("Could not get home dir");
+
+        dotpath.push(".mc-server-manager");
+
+        let mut mcsvdl_path: PathBuf = home_dir().expect("Could not get home dir");
+
+        mcsvdl_path.push(".mc-server-manager");
+
+        #[cfg(windows)]
+        mcsvdl_path.push("mcsvdl.exe");
+
+        #[cfg(unix)]
+        mcsvdl_path.push("mcsvdl");
+
+        let mut mcsvdl_tar: PathBuf = home_dir().expect("Could not get home dir");
+
+        mcsvdl_tar.push(".mc-server-manager");
+
+        #[cfg(windows)]
+        mcsvdl_tar.push("windows.zip");
+
+        #[cfg(unix)]
+        mcsvdl_tar.push("linux.tar");
+
+        if fs::exists(&mcsvdl_path).expect("Could not check existance of File") == true {
+            has_mcsvdl = true;
+        } else {
+            has_mcsvdl = false;
+        }
         if fs::exists(download_path.clone()).expect("Could not check existance of Directory") == true {
             fs::remove_file(download_path.clone()).expect("Could not delete file");
         }
@@ -1104,17 +1142,59 @@ fn download_server() {
         } else {
             fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         }
+        if has_mcsvdl == false {
+            #[cfg(windows)] {
+            println!("Downloading Helper Script...");
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+                }
+            #[cfg(unix)] {
+            println!("Downloading Helper Script...");
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+                }
+                
+        } else {
         println!("Downloading server.jar to {} ...", download_path);
-        // wait for 1.21.7 release
-        // load the new python script
-        Command::new("curl")
-        .args(&[
-        "https://piston-data.mojang.com/v1/objects/6e64dcabba3c01a7271b4fa6bd898483b794c59b/server.jar",
-        "-o",
-        &download_path,
-        ])
+        Command::new(&mcsvdl_path)
+        .arg("-v")
+        .arg(version)
+        .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
+        }
 
         let mut path_windows_dir = String::new();
         let mut path_windows_jar = String::new();
