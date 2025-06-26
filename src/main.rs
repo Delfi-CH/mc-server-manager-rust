@@ -24,6 +24,10 @@ use std::os::unix::process::CommandExt;
 //Used for spawning java on Windows
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+const MIN_MEM_DEFAULT: i32 = 512;
+const MAX_MEM_DEFAULT: i32 = 2048;
+const PORT_DEFAULT: i32 = 25565;
+
 //Structs
 
 //Structs for config file
@@ -328,6 +332,82 @@ fn add_server() {
     }
 }
 
+fn add_server_silent(path: &str) {
+        let full_path = mk_path_absolute(path);
+
+        let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
+
+        if filetype == Some("toml") {
+            match fs::read_to_string(&full_path) {
+                Ok(contents_string) => {
+                    if !contents_string.contains("[server_config]") {
+                        return;
+                    }
+
+                    let cfg_data_str = read_cfg_silent();
+                    let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
+                        Ok(cfg) => cfg,
+                        Err(e) => {
+                            eprintln!("Could not parse config.toml: {}", e);
+                            return;
+                        }
+                    };
+
+                    let server_toml_str = match fs::read_to_string(&full_path) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            eprintln!("Failed to read server config file: {}", e);
+                            return;
+                        }
+                    };
+
+                    let server_toml_toml: ServerConfigFile = match toml::from_str(&server_toml_str) {
+                        Ok(srv) => srv,
+                        Err(e) => {
+                            eprintln!("Could not parse server config TOML: {}", e);
+                            return;
+                        }
+                    };
+
+                    let is_windows = cfg_data_toml.system.os_mini == "win";
+
+                    let jar_path = if is_windows {
+                        &server_toml_toml.server_config.path_windows_jar
+                    } else {
+                        &server_toml_toml.server_config.path_unix_jar
+                    };
+
+                    if let Err(_) = fs::metadata(jar_path) {
+                        return;
+                    }
+
+                    let mut server_list = cfg_data_toml.server_list.server_list.clone();
+
+                    let mut server_count = cfg_data_toml.system.servers;
+                    server_count += 1;
+
+                    let key = format!("server{}", server_count);
+                    let path_str = full_path.display().to_string();
+                    let clean_path = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
+                    server_list.insert(key, clean_path.to_string());
+
+                    cfg_data_toml.system.servers = server_count;
+                    cfg_data_toml.server_list.server_list = server_list;
+
+                    write_cfg(&cfg_data_toml, "config.toml");
+
+                    return;
+                }
+                Err(e) => {
+                    println!("Failed to read file: {}", e);
+                    return;
+                }
+            }
+        } else {
+            println!("File is not TOML! Please enter a path to a TOML file.");
+        }
+    }
+
 fn init() {
     match fs::read("config.toml") {
         Ok(_) => {
@@ -395,7 +475,7 @@ fn init_setup(is_cfg_regenerated: bool) {
         if input == "y" {
 
             let mut default_server_dir: PathBuf = home_dir().expect("Could not find home directory");
-            default_server_dir.push(".mc-server-manager/servers");
+            default_server_dir.push(".mc-server-manager\\servers");
             println!("Setting server directory to the default Value ({})", default_server_dir.to_string_lossy());
             cfg_data_toml.storage.use_default_server_dir = true;
             cfg_data_toml.storage.directory = default_server_dir.to_string_lossy().to_string();
@@ -989,17 +1069,74 @@ fn download_server() {
         }
 
     if agree_eula == true{
-        let mut download_path: PathBuf = home_dir().expect("Could not find home directory");
-        download_path.push("Downloads/server.jar");
-        println!("Downloading server.jar ...");
+
+        let cfg_app_str = read_cfg_silent();
+        let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+        let new_server_id = cfg_app_data.system.servers + 1;
+
+        let base_dir = cfg_app_data.storage.directory.clone();
+
+        let mut download_path = String::new();
+        let mut toml_path = String::new();
+        let mut dir_path = String::new();
+
+        #[cfg(windows)] {
+        download_path = format!("{}\\server{}\\server.jar", base_dir, new_server_id);
+        toml_path = format!("{}\\server{}.toml", base_dir, new_server_id);
+        dir_path = format!("{}\\server{}", base_dir, new_server_id);
+        }
+        #[cfg(unix)] {
+        download_path = format!("{}/server{}/server.jar", base_dir, new_server_id);
+        toml_path = format!("{}/server{}.toml", base_dir, new_server_id);
+        dir_path = format!("{}/server{}", base_dir, new_server_id);
+        }
+
+        if fs::exists(download_path.clone()).expect("Could not check existance of Directory") == true {
+            fs::remove_file(download_path.clone()).expect("Could not delete file");
+        }
+        if fs::exists(toml_path.clone()).expect("Could not check existance of Directory") == true {
+            fs::remove_file(toml_path.clone()).expect("Could not delete file");
+        } 
+        if fs::exists(dir_path.clone()).expect("Could not check existance of Directory") == true {
+            fs::remove_dir_all(dir_path.clone()).expect("Could not delete file");
+        } else {
+            fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
+        }
+        println!("Downloading server.jar to {} ...", download_path);
+        // wait for 1.21.7 release
+        // load the new python script
         Command::new("curl")
         .args(&[
-        "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar",
+        "https://piston-data.mojang.com/v1/objects/6e64dcabba3c01a7271b4fa6bd898483b794c59b/server.jar",
         "-o",
-        download_path.to_str().unwrap(),
+        &download_path,
         ])
         .output()
         .expect("Failed to download File");
+
+        let mut path_windows_dir = String::new();
+        let mut path_windows_jar = String::new();
+        let mut path_unix_dir = String::new();
+        let mut path_unix_jar = String::new();
+
+        #[cfg(windows)] {
+        path_windows_dir = dir_path;
+        path_windows_jar = download_path;
+        path_unix_dir = "File was downloaded on Windows. Please add the path manually".to_string();
+        path_unix_jar = "File was downloaded on Windows. Please add the path manually".to_string();
+        }
+        #[cfg(unix)] {
+        path_windows_dir = "File was downloaded on Unix or a Unix-like OS. Please add the path manually".to_string();
+        path_windows_jar = "File was downloaded on Unix or a Unix-like OS. Please add the path manually".to_string();
+        path_unix_dir = dir_path;
+        path_unix_jar = download_path;
+        }
+        println!("Creating .toml File for the server...");
+        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), "1.21.5".to_string(), "vanilla".to_string(), path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
+        println!("Adding .toml file to the configuration...");
+        add_server_silent(toml_path.as_str());
         println!("Finished!");
     }
         }
@@ -1164,12 +1301,12 @@ fn mk_path_absolute(input_path: &str) -> PathBuf {
 }
 fn list_servers(){
 
-    //needs lots of work
+    // needs lots of work
 
     let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
     let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
     let cfg_app_str = read_cfg_silent();
-    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+    let _cfg_app_data: Config = toml::from_str(&cfg_app_str)
         .expect("Could not parse TOML");
 
     println!("{}", jps_str);
@@ -1187,8 +1324,6 @@ fn create_server_toml(
     min_mem: i32,
     max_mem: i32,
     port: i32,)  {
-
-    //also needs work
 
     let mut server_toml = File::create(toml_path).expect("Could not create file");
 
