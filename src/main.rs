@@ -48,6 +48,7 @@ struct System {
     servers: i32,
     after_initial_setup: bool,
     data_path: String,
+    mcsvdl_path: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct Storage {
@@ -608,6 +609,9 @@ fn new_cfg_silent(){
                 .write_all("data_path = \"\"\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
+                .write_all("mcsvdl_path = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
                 .write_all("[storage]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
@@ -1075,7 +1079,7 @@ fn download_server() {
     if agree_eula == true{
 
         let cfg_app_str = read_cfg_silent();
-        let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        let mut cfg_app_data: Config = toml::from_str(&cfg_app_str)
         .expect("Could not parse TOML");
 
         let new_server_id = cfg_app_data.system.servers + 1;
@@ -1115,6 +1119,10 @@ fn download_server() {
 
         #[cfg(unix)]
         mcsvdl_path.push("mcsvdl");
+
+        cfg_app_data.system.mcsvdl_path = mcsvdl_path.display().to_string();
+
+        write_cfg(&cfg_app_data, "config.toml");
 
         let mut mcsvdl_tar: PathBuf = home_dir().expect("Could not get home dir");
 
