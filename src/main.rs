@@ -314,7 +314,7 @@ fn main() {
             }
             //will be removed in non dev builds
             "dev" => {
-                create_server_toml("dev.toml".to_string(), "dev".to_string(), "1.21.6".to_string(), "vanilla".to_string(), "C:\\Privat\\Programming\\Rust\\mc_server_panel\\testdata\\vanilla-latest-dev\\".to_string(), "/mnt/c/dunno".to_string(), "C:\\Privat\\Programming\\Rust\\mc_server_panel\\testdata\\vanilla-latest-dev\\server.jar".to_string(), "/mnt/c/dunno/server.jar".to_string(), 256, 4096, 25565);
+                fml_versions_str("e".to_string(), true);
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
@@ -875,22 +875,66 @@ fn read_cfg_silent() -> String {
     }
 }
 fn fml_versions_str(mc_version: String, is_neoforge: bool) -> String {
-    match File::open("") {
-        Ok(mut app_cfg) => {
-            let mut app_cfg_content = String::new();
-            if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
-                eprintln!("Error reading file: {}", e);
-                return app_cfg_content;
-            } else {
-                return app_cfg_content;
-            }
+
+    let mut fml_file_path = String::new();
+
+    #[cfg(windows)] {
+        fml_file_path = home_dir().expect("Could not get HomeDir").display().to_string();
+        fml_file_path = fml_file_path + "\\.mc-server-manager\\data";
+    }
+    #[cfg(unix)] {
+        fml_file_path = home_dir().expect("Could not get HomeDir").display().to_string();
+        fml_file_path = fml_file_path + "/.mc-server-manager/data"
+    }
+
+    if is_neoforge == true {
+        #[cfg(windows)] {
+        fml_file_path = fml_file_path + "\\neofml_versions.toml"
         }
-        Err(_) => {
-            new_cfg_silent();
-            let return_error_statement = "rerun";
-            return return_error_statement.to_string();        
+        #[cfg(unix)] {
+        fml_file_path = fml_file_path + "/neofml_versions.toml"
+        }
+    } else {
+        #[cfg(windows)] {
+        fml_file_path = fml_file_path + "\\fml_versions.toml"
+        }
+        #[cfg(unix)] {
+        fml_file_path = fml_file_path + "/fml_versions.toml"
         }
     }
+    loop {
+    match File::open(&fml_file_path) {
+        Ok(fml_version_file) => {
+            let fml_version_file_str = fs::read_to_string(fml_file_path).expect("Could not read File");
+            println!("{}", fml_version_file_str);
+            return fml_version_file_str;
+        }
+        Err(_) => {
+            if is_neoforge == true {
+            
+            Command::new("curl")
+            .args([
+                "-L",
+                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/neofml_versions.toml",
+                "-o",
+                &fml_file_path,
+            ])
+            .output()
+            .expect("Failed to download File");
+            } else {
+            Command::new("curl")
+            .args([
+                "-L",
+                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/fml_versions.toml",
+                "-o",
+                &fml_file_path,
+            ])
+            .output()
+            .expect("Failed to download File"); 
+            }
+        }
+    }
+}
 }
 
 fn write_cfg(config: &Config, path: &str) {
