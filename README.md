@@ -202,6 +202,10 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - Minecraft 1.14.4 - 1.21.6
 - Quilt
   - Minecraft 1.18.2 - 1.21.6
+- PaperMC
+  - Minecraft 1.9.4 - 1.21.5
+
+Note that the April Fools Versions are not supported by Modloaders
 
 ## Configuration
 

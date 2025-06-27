@@ -36,6 +36,7 @@ const PORT_DEFAULT: i32 = 25565;
 struct Config {
     title: String,
     system: System,
+    mcsvdl: McsvdlInfo,
     storage: Storage,
     #[serde(default)]
     server_list: Servers,
@@ -48,7 +49,12 @@ struct System {
     servers: i32,
     after_initial_setup: bool,
     data_path: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct McsvdlInfo {
+    has_mcsvdl: bool,
     mcsvdl_path: String,
+    mcsvdl_version: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct Storage {
@@ -67,7 +73,6 @@ impl Default for Servers {
         }
     }
 }
-
 
 // Structs for a server config file
 #[derive(Serialize, Deserialize, Debug)]
@@ -90,6 +95,43 @@ struct ServerConfigData {
     running: bool,
     pid: String,
     port: i32,
+}
+
+// Struct for getting the github release number
+
+#[derive(Debug, Deserialize)]
+struct Release {
+    tag_name: String,
+}
+
+// Struct for the ForgeModLoader versions file
+
+#[derive(Serialize, Deserialize, Debug)]
+struct FmlVersionsFile {
+    _1_21_6: String,
+    _1_21_5: String,
+    _1_21_4: String,
+    _1_21_3: String,
+    _1_21_1: String,
+    _1_20_6: String,
+    _1_20_4: String,
+    _1_20_2: String,
+    _1_20_1: String,
+    _1_19_4: String,
+    _1_18_2: String,
+    _1_17_1: String,
+    _1_16_5: String,
+    _1_16_2: String,
+    _1_16_1: String,
+    _1_15_2: String,
+    _1_14_4: String,
+    _1_13_2: String,
+    _1_12_2: String,
+    _1_11_2: String,
+    _1_10_2: String,
+    _1_9_4: String,
+    _1_8_9: String,
+    _1_7_10: String,
 }
 
 //fn main
@@ -447,10 +489,17 @@ fn init_setup(is_cfg_regenerated: bool) {
             println!("Directory already exists!");  
             }
             Err(_) => {
-                fs::create_dir(data_dir).expect("Could not create directory");
+                fs::create_dir(&data_dir).expect("Could not create directory");
             }
         }
-        
+        let mut mcsvdl_tar= data_dir.clone();
+        #[cfg(windows)] {
+        mcsvdl_tar.push("mcsvdl.exe");
+        }
+        #[cfg(unix)] {
+        mcsvdl_tar.push("mcsvdl");
+        }
+        check_mcsvdl(data_dir.clone(), mcsvdl_tar.clone());
         
 
         } else {
@@ -609,7 +658,16 @@ fn new_cfg_silent(){
                 .write_all("data_path = \"\"\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
+                .write_all("[mcsvdl]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("has_mcsvdl = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
                 .write_all("mcsvdl_path = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("mcsvdl_version = \"\"\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[storage]\n".as_bytes())
@@ -716,6 +774,24 @@ fn read_cfg_silent() -> String {
 
     // same as fn read_cfg, but doesnt print output
     match File::open("config.toml") {
+        Ok(mut app_cfg) => {
+            let mut app_cfg_content = String::new();
+            if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
+                eprintln!("Error reading file: {}", e);
+                return app_cfg_content;
+            } else {
+                return app_cfg_content;
+            }
+        }
+        Err(_) => {
+            new_cfg_silent();
+            let return_error_statement = "rerun";
+            return return_error_statement.to_string();        
+        }
+    }
+}
+fn fml_versions_str() -> String {
+    match File::open("") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
             if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
@@ -1104,7 +1180,7 @@ fn download_server() {
         //temp var
         let version = "1.21.6";
 
-        let mut has_mcsvdl = false;
+        let mut has_mcsvdl = cfg_app_data.mcsvdl.has_mcsvdl;
 
         let mut dotpath: PathBuf = home_dir().expect("Could not get home dir");
 
@@ -1120,7 +1196,7 @@ fn download_server() {
         #[cfg(unix)]
         mcsvdl_path.push("mcsvdl");
 
-        cfg_app_data.system.mcsvdl_path = mcsvdl_path.display().to_string();
+        cfg_app_data.mcsvdl.mcsvdl_path = mcsvdl_path.display().to_string();
 
         write_cfg(&cfg_app_data, "config.toml");
 
@@ -1151,54 +1227,16 @@ fn download_server() {
             fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         }
         if has_mcsvdl == false {
-            #[cfg(windows)] {
             println!("Downloading Helper Script...");
-            Command::new("curl")
-                .args(&[
-                "-L",    
-                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
-                "-o",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-            Command::new("tar") 
-                .args(&[
-                "-xf",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-                }
-            #[cfg(unix)] {
-            println!("Downloading Helper Script...");
-            Command::new("curl")
-                .args(&[
-                "-L",    
-                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
-                "-o",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-            Command::new("tar") 
-                .args(&[
-                "-xf",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-                }
+            check_mcsvdl(dotpath, mcsvdl_tar);
                 
         } else {
+        //needs logic for modloaders
         println!("Downloading server.jar to {} ...", download_path);
         Command::new(&mcsvdl_path)
         .arg("-v")
         .arg(version)
+        .arg("-m Vanilla")
         .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
@@ -1449,4 +1487,133 @@ fn create_server_toml(
     .expect("Could not write to file");
 
     
+}
+
+fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
+    let cfg_app_str = read_cfg_silent();
+    let mut cfg_app_data: Config = toml::from_str(&cfg_app_str)
+    .expect("Could not parse TOML");
+
+    let output = Command::new("curl")
+        .arg("-s")
+        .arg("https://api.github.com/repos/Delfi-CH/mc-server-downloader-py/releases/latest")
+        .arg("-H")
+        .arg("User-Agent: mc-sever-manager-rs")
+        .output()
+        .expect("Failed to execute curl");
+
+    assert!(output.status.success(), "curl command failed");
+
+    let stdout = String::from_utf8(output.stdout)
+        .expect("Failed to convert curl output to UTF-8");
+
+    let release_data: Release = serde_json::from_str(&stdout)
+        .expect("Failed to parse JSON response");
+
+    let release_num = release_data.tag_name;
+
+    if cfg_app_data.mcsvdl.has_mcsvdl == false {
+
+        cfg_app_data.mcsvdl.has_mcsvdl = true;
+        cfg_app_data.mcsvdl.mcsvdl_version = release_num;
+
+        let mut mcsvdl_path = dotpath.clone();
+
+        #[cfg(windows)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to extract File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+            mcsvdl_path.push("mcsvdl.exe");
+                }
+            #[cfg(unix)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to untar File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+            mcsvdl_path.push("mcsvdl");
+                }
+        write_cfg(&cfg_app_data, "config.toml");
+            
+
+    } else if release_num != cfg_app_data.mcsvdl.mcsvdl_version {
+
+        cfg_app_data.mcsvdl.mcsvdl_version = release_num;
+        write_cfg(&cfg_app_data, "config.toml");
+
+        #[cfg(windows)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to extract File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+                }
+            #[cfg(unix)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to untar File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+                }
+
+
+    }
 }
