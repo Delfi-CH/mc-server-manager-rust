@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
-use std::env;
+use std::env::{self};
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -24,6 +24,10 @@ use std::os::unix::process::CommandExt;
 //Used for spawning java on Windows
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+const MIN_MEM_DEFAULT: i32 = 512;
+const MAX_MEM_DEFAULT: i32 = 2048;
+const PORT_DEFAULT: i32 = 25565;
+
 //Structs
 
 //Structs for config file
@@ -32,6 +36,7 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 struct Config {
     title: String,
     system: System,
+    mcsvdl: McsvdlInfo,
     storage: Storage,
     #[serde(default)]
     server_list: Servers,
@@ -44,6 +49,12 @@ struct System {
     servers: i32,
     after_initial_setup: bool,
     data_path: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct McsvdlInfo {
+    has_mcsvdl: bool,
+    mcsvdl_path: String,
+    mcsvdl_version: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct Storage {
@@ -62,7 +73,6 @@ impl Default for Servers {
         }
     }
 }
-
 
 // Structs for a server config file
 #[derive(Serialize, Deserialize, Debug)]
@@ -85,6 +95,43 @@ struct ServerConfigData {
     running: bool,
     pid: String,
     port: i32,
+}
+
+// Struct for getting the github release number
+
+#[derive(Debug, Deserialize)]
+struct Release {
+    tag_name: String,
+}
+
+// Struct for the ForgeModLoader versions file
+
+#[derive(Serialize, Deserialize, Debug)]
+struct FmlVersionsFile {
+    _1_21_6: String,
+    _1_21_5: String,
+    _1_21_4: String,
+    _1_21_3: String,
+    _1_21_1: String,
+    _1_20_6: String,
+    _1_20_4: String,
+    _1_20_2: String,
+    _1_20_1: String,
+    _1_19_4: String,
+    _1_18_2: String,
+    _1_17_1: String,
+    _1_16_5: String,
+    _1_16_2: String,
+    _1_16_1: String,
+    _1_15_2: String,
+    _1_14_4: String,
+    _1_13_2: String,
+    _1_12_2: String,
+    _1_11_2: String,
+    _1_10_2: String,
+    _1_9_4: String,
+    _1_8_9: String,
+    _1_7_10: String,
 }
 
 //fn main
@@ -328,6 +375,82 @@ fn add_server() {
     }
 }
 
+fn add_server_silent(path: &str) {
+        let full_path = mk_path_absolute(path);
+
+        let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
+
+        if filetype == Some("toml") {
+            match fs::read_to_string(&full_path) {
+                Ok(contents_string) => {
+                    if !contents_string.contains("[server_config]") {
+                        return;
+                    }
+
+                    let cfg_data_str = read_cfg_silent();
+                    let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
+                        Ok(cfg) => cfg,
+                        Err(e) => {
+                            eprintln!("Could not parse config.toml: {}", e);
+                            return;
+                        }
+                    };
+
+                    let server_toml_str = match fs::read_to_string(&full_path) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            eprintln!("Failed to read server config file: {}", e);
+                            return;
+                        }
+                    };
+
+                    let server_toml_toml: ServerConfigFile = match toml::from_str(&server_toml_str) {
+                        Ok(srv) => srv,
+                        Err(e) => {
+                            eprintln!("Could not parse server config TOML: {}", e);
+                            return;
+                        }
+                    };
+
+                    let is_windows = cfg_data_toml.system.os_mini == "win";
+
+                    let jar_path = if is_windows {
+                        &server_toml_toml.server_config.path_windows_jar
+                    } else {
+                        &server_toml_toml.server_config.path_unix_jar
+                    };
+
+                    if let Err(_) = fs::metadata(jar_path) {
+                        return;
+                    }
+
+                    let mut server_list = cfg_data_toml.server_list.server_list.clone();
+
+                    let mut server_count = cfg_data_toml.system.servers;
+                    server_count += 1;
+
+                    let key = format!("server{}", server_count);
+                    let path_str = full_path.display().to_string();
+                    let clean_path = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
+                    server_list.insert(key, clean_path.to_string());
+
+                    cfg_data_toml.system.servers = server_count;
+                    cfg_data_toml.server_list.server_list = server_list;
+
+                    write_cfg(&cfg_data_toml, "config.toml");
+
+                    return;
+                }
+                Err(e) => {
+                    println!("Failed to read file: {}", e);
+                    return;
+                }
+            }
+        } else {
+            println!("File is not TOML! Please enter a path to a TOML file.");
+        }
+    }
+
 fn init() {
     match fs::read("config.toml") {
         Ok(_) => {
@@ -366,10 +489,17 @@ fn init_setup(is_cfg_regenerated: bool) {
             println!("Directory already exists!");  
             }
             Err(_) => {
-                fs::create_dir(data_dir).expect("Could not create directory");
+                fs::create_dir(&data_dir).expect("Could not create directory");
             }
         }
-        
+        let mut mcsvdl_tar= data_dir.clone();
+        #[cfg(windows)] {
+        mcsvdl_tar.push("mcsvdl.exe");
+        }
+        #[cfg(unix)] {
+        mcsvdl_tar.push("mcsvdl");
+        }
+        check_mcsvdl(data_dir.clone(), mcsvdl_tar.clone());
         
 
         } else {
@@ -394,8 +524,12 @@ fn init_setup(is_cfg_regenerated: bool) {
 
         if input == "y" {
 
+            let mut data_dir: PathBuf = home_dir().expect("Could not find home directory");
+            data_dir.push(".mc-server-manager");
+            cfg_data_toml.system.data_path = data_dir.to_string_lossy().to_string();
+
             let mut default_server_dir: PathBuf = home_dir().expect("Could not find home directory");
-            default_server_dir.push(".mc-server-manager/servers");
+            default_server_dir.push(".mc-server-manager\\servers");
             println!("Setting server directory to the default Value ({})", default_server_dir.to_string_lossy());
             cfg_data_toml.storage.use_default_server_dir = true;
             cfg_data_toml.storage.directory = default_server_dir.to_string_lossy().to_string();
@@ -524,6 +658,18 @@ fn new_cfg_silent(){
                 .write_all("data_path = \"\"\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
+                .write_all("[mcsvdl]\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("has_mcsvdl = false\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("mcsvdl_path = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("mcsvdl_version = \"\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
                 .write_all("[storage]\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
@@ -628,6 +774,24 @@ fn read_cfg_silent() -> String {
 
     // same as fn read_cfg, but doesnt print output
     match File::open("config.toml") {
+        Ok(mut app_cfg) => {
+            let mut app_cfg_content = String::new();
+            if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
+                eprintln!("Error reading file: {}", e);
+                return app_cfg_content;
+            } else {
+                return app_cfg_content;
+            }
+        }
+        Err(_) => {
+            new_cfg_silent();
+            let return_error_statement = "rerun";
+            return return_error_statement.to_string();        
+        }
+    }
+}
+fn fml_versions_str() -> String {
+    match File::open("") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
             if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
@@ -989,17 +1153,116 @@ fn download_server() {
         }
 
     if agree_eula == true{
-        let mut download_path: PathBuf = home_dir().expect("Could not find home directory");
-        download_path.push("Downloads/server.jar");
-        println!("Downloading server.jar ...");
-        Command::new("curl")
-        .args(&[
-        "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar",
-        "-o",
-        download_path.to_str().unwrap(),
-        ])
+
+        let cfg_app_str = read_cfg_silent();
+        let mut cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+        let new_server_id = cfg_app_data.system.servers + 1;
+
+        let base_dir = cfg_app_data.storage.directory.clone();
+
+        let mut download_path = String::new();
+        let mut toml_path = String::new();
+        let mut dir_path = String::new();
+
+        #[cfg(windows)] {
+        download_path = format!("{}\\server{}\\server.jar", base_dir, new_server_id);
+        toml_path = format!("{}\\server{}.toml", base_dir, new_server_id);
+        dir_path = format!("{}\\server{}", base_dir, new_server_id);
+        }
+        #[cfg(unix)] {
+        download_path = format!("{}/server{}/server.jar", base_dir, new_server_id);
+        toml_path = format!("{}/server{}.toml", base_dir, new_server_id);
+        dir_path = format!("{}/server{}", base_dir, new_server_id);
+        }
+
+        //temp var
+        let version = "1.21.6";
+
+        let mut has_mcsvdl = cfg_app_data.mcsvdl.has_mcsvdl;
+
+        let mut dotpath: PathBuf = home_dir().expect("Could not get home dir");
+
+        dotpath.push(".mc-server-manager");
+
+        let mut mcsvdl_path: PathBuf = home_dir().expect("Could not get home dir");
+
+        mcsvdl_path.push(".mc-server-manager");
+
+        #[cfg(windows)]
+        mcsvdl_path.push("mcsvdl.exe");
+
+        #[cfg(unix)]
+        mcsvdl_path.push("mcsvdl");
+
+        cfg_app_data.mcsvdl.mcsvdl_path = mcsvdl_path.display().to_string();
+
+        write_cfg(&cfg_app_data, "config.toml");
+
+        let mut mcsvdl_tar: PathBuf = home_dir().expect("Could not get home dir");
+
+        mcsvdl_tar.push(".mc-server-manager");
+
+        #[cfg(windows)]
+        mcsvdl_tar.push("windows.zip");
+
+        #[cfg(unix)]
+        mcsvdl_tar.push("linux.tar");
+
+        if fs::exists(&mcsvdl_path).expect("Could not check existance of File") == true {
+            has_mcsvdl = true;
+        } else {
+            has_mcsvdl = false;
+        }
+        if fs::exists(download_path.clone()).expect("Could not check existance of Directory") == true {
+            fs::remove_file(download_path.clone()).expect("Could not delete file");
+        }
+        if fs::exists(toml_path.clone()).expect("Could not check existance of Directory") == true {
+            fs::remove_file(toml_path.clone()).expect("Could not delete file");
+        } 
+        if fs::exists(dir_path.clone()).expect("Could not check existance of Directory") == true {
+            fs::remove_dir_all(dir_path.clone()).expect("Could not delete file");
+        } else {
+            fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
+        }
+        if has_mcsvdl == false {
+            println!("Downloading Helper Script...");
+            check_mcsvdl(dotpath, mcsvdl_tar);
+                
+        } else {
+        //needs logic for modloaders
+        println!("Downloading server.jar to {} ...", download_path);
+        Command::new(&mcsvdl_path)
+        .arg("-v")
+        .arg(version)
+        .arg("-m Vanilla")
+        .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
+        }
+
+        let mut path_windows_dir = String::new();
+        let mut path_windows_jar = String::new();
+        let mut path_unix_dir = String::new();
+        let mut path_unix_jar = String::new();
+
+        #[cfg(windows)] {
+        path_windows_dir = dir_path;
+        path_windows_jar = download_path;
+        path_unix_dir = "File was downloaded on Windows. Please add the path manually".to_string();
+        path_unix_jar = "File was downloaded on Windows. Please add the path manually".to_string();
+        }
+        #[cfg(unix)] {
+        path_windows_dir = "File was downloaded on Unix or a Unix-like OS. Please add the path manually".to_string();
+        path_windows_jar = "File was downloaded on Unix or a Unix-like OS. Please add the path manually".to_string();
+        path_unix_dir = dir_path;
+        path_unix_jar = download_path;
+        }
+        println!("Creating .toml File for the server...");
+        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), "1.21.5".to_string(), "vanilla".to_string(), path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
+        println!("Adding .toml file to the configuration...");
+        add_server_silent(toml_path.as_str());
         println!("Finished!");
     }
         }
@@ -1164,12 +1427,12 @@ fn mk_path_absolute(input_path: &str) -> PathBuf {
 }
 fn list_servers(){
 
-    //needs lots of work
+    // needs lots of work
 
     let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
     let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
     let cfg_app_str = read_cfg_silent();
-    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+    let _cfg_app_data: Config = toml::from_str(&cfg_app_str)
         .expect("Could not parse TOML");
 
     println!("{}", jps_str);
@@ -1187,8 +1450,6 @@ fn create_server_toml(
     min_mem: i32,
     max_mem: i32,
     port: i32,)  {
-
-    //also needs work
 
     let mut server_toml = File::create(toml_path).expect("Could not create file");
 
@@ -1226,4 +1487,133 @@ fn create_server_toml(
     .expect("Could not write to file");
 
     
+}
+
+fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
+    let cfg_app_str = read_cfg_silent();
+    let mut cfg_app_data: Config = toml::from_str(&cfg_app_str)
+    .expect("Could not parse TOML");
+
+    let output = Command::new("curl")
+        .arg("-s")
+        .arg("https://api.github.com/repos/Delfi-CH/mc-server-downloader-py/releases/latest")
+        .arg("-H")
+        .arg("User-Agent: mc-sever-manager-rs")
+        .output()
+        .expect("Failed to execute curl");
+
+    assert!(output.status.success(), "curl command failed");
+
+    let stdout = String::from_utf8(output.stdout)
+        .expect("Failed to convert curl output to UTF-8");
+
+    let release_data: Release = serde_json::from_str(&stdout)
+        .expect("Failed to parse JSON response");
+
+    let release_num = release_data.tag_name;
+
+    if cfg_app_data.mcsvdl.has_mcsvdl == false {
+
+        cfg_app_data.mcsvdl.has_mcsvdl = true;
+        cfg_app_data.mcsvdl.mcsvdl_version = release_num;
+
+        let mut mcsvdl_path = dotpath.clone();
+
+        #[cfg(windows)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to extract File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+            mcsvdl_path.push("mcsvdl.exe");
+                }
+            #[cfg(unix)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to untar File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+            mcsvdl_path.push("mcsvdl");
+                }
+        write_cfg(&cfg_app_data, "config.toml");
+            
+
+    } else if release_num != cfg_app_data.mcsvdl.mcsvdl_version {
+
+        cfg_app_data.mcsvdl.mcsvdl_version = release_num;
+        write_cfg(&cfg_app_data, "config.toml");
+
+        #[cfg(windows)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to extract File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+                }
+            #[cfg(unix)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to untar File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+                }
+
+
+    }
 }
