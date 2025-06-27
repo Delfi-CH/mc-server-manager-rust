@@ -22,6 +22,7 @@ use std::os::unix::process::CommandExt;
 //Consts
 
 //Used for spawning java on Windows
+#[warn(dead_code)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 const MIN_MEM_DEFAULT: i32 = 512;
@@ -35,8 +36,11 @@ const PORT_DEFAULT: i32 = 25565;
 #[derive(Serialize, Deserialize, Debug)]
 struct Config {
     title: String,
+    #[serde(default)]
     system: System,
+    #[serde(default)]
     mcsvdl: McsvdlInfo,
+    #[serde(default)]
     storage: Storage,
     #[serde(default)]
     server_list: Servers,
@@ -44,28 +48,73 @@ struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct System {
+    #[serde(default)]
     os: String,
+    #[serde(default)]
     os_mini: String,
+    #[serde(default)]
     servers: i32,
+    #[serde(default)]
     after_initial_setup: bool,
+    #[serde(default)]
     data_path: String,
 }
+
+impl Default for System {
+    fn default() -> Self {
+        System {
+            os: String::new(),
+            os_mini: String::new(),
+            servers: 0,
+            after_initial_setup: false,
+            data_path: String::new(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct McsvdlInfo {
+    #[serde(default)]
     has_mcsvdl: bool,
+    #[serde(default)]
     mcsvdl_path: String,
+    #[serde(default)]
     mcsvdl_version: String,
 }
+
+impl Default for McsvdlInfo {
+    fn default() -> Self {
+        McsvdlInfo {
+            has_mcsvdl: false,
+            mcsvdl_path: String::new(),
+            mcsvdl_version: String::new(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Storage {
+    #[serde(default)]
     use_default_server_dir: bool,
+    #[serde(default)]
     directory: String,
 }
+
+impl Default for Storage {
+    fn default() -> Self {
+        Storage {
+            use_default_server_dir: false,
+            directory: "none".into(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Servers {
     #[serde(default)]
     server_list: HashMap<String, String>,
 }
+
 impl Default for Servers {
     fn default() -> Self {
         Servers {
@@ -73,6 +122,7 @@ impl Default for Servers {
         }
     }
 }
+
 
 // Structs for a server config file
 #[derive(Serialize, Deserialize, Debug)]
@@ -295,6 +345,8 @@ fn add_server() {
         }
         let full_path = mk_path_absolute(path);
 
+        println!("{}", full_path.display());
+
         let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
 
         if filetype == Some("toml") {
@@ -378,6 +430,8 @@ fn add_server() {
 fn add_server_silent(path: &str) {
         let full_path = mk_path_absolute(path);
 
+        println!("{}", full_path.display());
+
         let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
 
         if filetype == Some("toml") {
@@ -387,6 +441,8 @@ fn add_server_silent(path: &str) {
                         return;
                     }
 
+                    println!("step1");
+
                     let cfg_data_str = read_cfg_silent();
                     let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
                         Ok(cfg) => cfg,
@@ -395,6 +451,7 @@ fn add_server_silent(path: &str) {
                             return;
                         }
                     };
+                     println!("step2");
 
                     let server_toml_str = match fs::read_to_string(&full_path) {
                         Ok(s) => s,
@@ -412,6 +469,8 @@ fn add_server_silent(path: &str) {
                         }
                     };
 
+                     println!("step3");
+
                     let is_windows = cfg_data_toml.system.os_mini == "win";
 
                     let jar_path = if is_windows {
@@ -421,8 +480,11 @@ fn add_server_silent(path: &str) {
                     };
 
                     if let Err(_) = fs::metadata(jar_path) {
+                        println!("Jar path does not exist: {}", jar_path);
                         return;
                     }
+
+                     println!("step4");
 
                     let mut server_list = cfg_data_toml.server_list.server_list.clone();
 
@@ -431,13 +493,20 @@ fn add_server_silent(path: &str) {
 
                     let key = format!("server{}", server_count);
                     let path_str = full_path.display().to_string();
-                    let clean_path = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
+                    let clean_path = match fs::canonicalize(&full_path) {
+                            Ok(p) => p.display().to_string(),
+                            Err(_) => path_str, // fallback to whatever you have
+                    };
+
                     server_list.insert(key, clean_path.to_string());
 
                     cfg_data_toml.system.servers = server_count;
                     cfg_data_toml.server_list.server_list = server_list;
+                     println!("step5");
 
                     write_cfg(&cfg_data_toml, "config.toml");
+
+                     println!("step6");
 
                     return;
                 }
@@ -528,8 +597,22 @@ fn init_setup(is_cfg_regenerated: bool) {
             data_dir.push(".mc-server-manager");
             cfg_data_toml.system.data_path = data_dir.to_string_lossy().to_string();
 
+            let mut mcsvdl_tar= data_dir.clone();
+            #[cfg(windows)] {
+            mcsvdl_tar.push("mcsvdl.exe");
+            }
+            #[cfg(unix)] {
+            mcsvdl_tar.push("mcsvdl");
+            }
+            check_mcsvdl(data_dir.clone(), mcsvdl_tar.clone());
+
             let mut default_server_dir: PathBuf = home_dir().expect("Could not find home directory");
+            #[cfg(windows)]{
             default_server_dir.push(".mc-server-manager\\servers");
+            }
+            #[cfg(unix)]{
+            default_server_dir.push(".mc-server-manager/servers");
+            }
             println!("Setting server directory to the default Value ({})", default_server_dir.to_string_lossy());
             cfg_data_toml.storage.use_default_server_dir = true;
             cfg_data_toml.storage.directory = default_server_dir.to_string_lossy().to_string();
@@ -582,6 +665,7 @@ fn init_setup(is_cfg_regenerated: bool) {
             println!("Not a valid Input!");
         }
     
+
     if server_dir_set == true {
         after_inital_setup = true;
     }
@@ -600,13 +684,13 @@ fn init_setup(is_cfg_regenerated: bool) {
 fn init_silent() {
     match fs::read("config.toml") {
         Ok(_) => {
-            init_setup(false);
+            return; 
         }
         Err(_) => {
             new_cfg_silent();
-            init_setup(false);
         }
     }
+    init_setup(false);
 }
 
 fn new_cfg(){
@@ -790,7 +874,7 @@ fn read_cfg_silent() -> String {
         }
     }
 }
-fn fml_versions_str() -> String {
+fn fml_versions_str(mc_version: String, is_neoforge: bool) -> String {
     match File::open("") {
         Ok(mut app_cfg) => {
             let mut app_cfg_content = String::new();
@@ -1079,7 +1163,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
                 }
             }
         }
-    } else if cfg_app_data.system.os_mini.to_lowercase().contains("linux") {
+    } else if cfg_app_data.system.os_mini.to_lowercase().contains("unix") {
         #[cfg(unix)]
         { unsafe {
             let mut spawn_server = Command::new("java");
@@ -1223,20 +1307,20 @@ fn download_server() {
         } 
         if fs::exists(dir_path.clone()).expect("Could not check existance of Directory") == true {
             fs::remove_dir_all(dir_path.clone()).expect("Could not delete file");
+            fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         } else {
             fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         }
         if has_mcsvdl == false {
             println!("Downloading Helper Script...");
             check_mcsvdl(dotpath, mcsvdl_tar);
-                
         } else {
+        check_mcsvdl(dotpath, mcsvdl_tar);
+        println!("{}-{}", mcsvdl_path.display(), dir_path);
         //needs logic for modloaders
         println!("Downloading server.jar to {} ...", download_path);
         Command::new(&mcsvdl_path)
-        .arg("-v")
-        .arg(version)
-        .arg("-m Vanilla")
+        .args(&["-v", "1.21.6", "-m", "vanilla"])
         .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
@@ -1260,7 +1344,7 @@ fn download_server() {
         path_unix_jar = download_path;
         }
         println!("Creating .toml File for the server...");
-        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), "1.21.5".to_string(), "vanilla".to_string(), path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
+        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), "1.21.6".to_string(), "vanilla".to_string(), path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
         println!("Adding .toml file to the configuration...");
         add_server_silent(toml_path.as_str());
         println!("Finished!");
@@ -1340,7 +1424,13 @@ fn start_toml() {
         };
 
         let mut agree_eula = cfg_server_toml.server_config.eula;
-        let eula_path = format!("{}eula.txt", path_dir_str);
+        let mut eula_path = String::new();
+        #[cfg(windows)] {
+        eula_path = format!("{}\\eula.txt", path_dir_str);
+        }
+        #[cfg(unix)] {
+        eula_path = format!("{}/eula.txt", path_dir_str);
+        }
 
         if let Ok(contents) = fs::read_to_string(&eula_path) {
             if contents.contains("eula = true") {
@@ -1403,10 +1493,11 @@ fn start_toml() {
         } else {
             println!("An error occurred while starting the server!");
             println!(
-                "Try running:\njava -Xmx{}M -Xms{}M -jar {}",
+                "Try running:\njava -Xmx{}M -Xms{}M -jar {}, in the directory: {}",
                 mem_max,
                 mem_min,
-                path_to_jar.display()
+                path_to_jar.display(),
+                path_server_dir.display(),
             );
         }
     } else {
