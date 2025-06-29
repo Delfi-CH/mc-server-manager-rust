@@ -2,16 +2,19 @@
 
 rust tool for managing multiple selfohosted minecraft servers
 
-CURRENTLY WORK IN PROGRESS!
-DO NOT USE
-NOT ALL FEATURES ARE IMPLEMENTED
-FOR MORE INFO SEE [HERE](https://github.com/Delfi-CH/mc-server-management/blob/main/TODO.md)
+THIS APP IS CURRENTLY WORK IN PROGRESS
+
+NOT ALL FEATURES WORK FULLY
+
+FOR MORE INFO LOOK [HERE](https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/TODO.md)
+
 
 ## Requirements
 
 ### Processor:
 
-x86-64 based Processor (Intel/AMD)
+x86-64 based Processor 
+(Any Intel/AMD Processor released in the last 15 years should work)
 
 ### RAM:
 
@@ -64,7 +67,7 @@ Supported Java Runtimes:
 #### Downloading and Installing Java
 - Visit the official JDK 24 website: [https://jdk.java.net/24/](https://jdk.java.net/24/)
 - Download the ZIP archive for Windows.
-- Unzip the downloaded archive to a safe and convenient location on your computer (eg:  `C:\Java\jdk-24`).
+- Unzip the downloaded archive to a safe and convenient location on your computer (eg: `C:\Java\jdk-24`).
 - Locate the `java.exe` file inside the extracted folder (typically in the `bin` directory).
 - Copy the full path to the `bin` folder.
 - Add this path to your system's **PATH** environment variable:
@@ -190,7 +193,7 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - 1.7.10
 
 - Minecraft 1.0.x - 1.7.x
-    - We currently dont support these versions.
+    - We dont support these versions.
 
 ### Modloaders
 
@@ -205,8 +208,7 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 - PaperMC
   - Minecraft 1.9.4 - 1.21.5
 
-Note that the April Fools Versions are not supported by Modloaders
-
+Note that Versions labled "April Fools" cannot be run with any modloaders.
 ## Configuration
 
 For configuring the app, TOML (Tom's Obvious Minimal Language) is beeing used. You can read more about it [here](https://toml.io/)
@@ -229,6 +231,6 @@ THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
 
 This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).
 For more information, please visit https://www.gnu.org/licenses/gpl-3.0
-However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.
+However, this program can download and execute the proprietary licensed Minecraft server.jar via seperate processes.
 These functions require agreeing to the Minecraft End User License Agreement (EULA).
 For more information, please visit https://www.minecraft.net/en-us/eula.
