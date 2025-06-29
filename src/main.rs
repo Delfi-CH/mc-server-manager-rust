@@ -10,13 +10,13 @@ use std::process::{Command, Stdio};
 use dir::{home_dir};
 use std::process::exit;
 use std::{thread, time::Duration};
+use std::process::Child;
 #[cfg(unix)]
 use libc;
-use std::process::Child;
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 
 //Consts
@@ -286,7 +286,8 @@ fn main() {
             }
             //will be removed in non dev builds
             "dev" => {
-                fml_versions_str("e".to_string(), true);
+                let e = fml_versions_str("1.21.6".to_string(), false);
+                println!("{}", e);
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
@@ -838,6 +839,8 @@ fn read_cfg_silent() -> String {
 }
 fn fml_versions_str(mc_version: String, is_neoforge: bool) -> String {
 
+    check_fml_vfile_updates(is_neoforge);
+
     let mut fml_file_path = String::new();
 
     #[cfg(windows)] {
@@ -875,33 +878,13 @@ fn fml_versions_str(mc_version: String, is_neoforge: bool) -> String {
 
             if let Some(ver) = version {
                 println!("Version string: {}", ver);
+                return ver.clone();
+            } else {
+                return "An Error Occured".to_string();
             }
-
-            return fml_version_file_str;
         }
         Err(_) => {
-            if is_neoforge == true {
-            
-            Command::new("curl")
-            .args([
-                "-L",
-                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/neofml_versions.toml",
-                "-o",
-                &fml_file_path,
-            ])
-            .output()
-            .expect("Failed to download File");
-            } else {
-            Command::new("curl")
-            .args([
-                "-L",
-                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/fml_versions.toml",
-                "-o",
-                &fml_file_path,
-            ])
-            .output()
-            .expect("Failed to download File"); 
-            }
+            fml_vfile_donwload(is_neoforge, fml_file_path.clone());
         }
     }
 }
@@ -1720,5 +1703,91 @@ fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
                 }
 
 
+    }
+}
+
+fn check_fml_vfile_updates(is_neoforge: bool) {
+
+    let mut fml_vfile_path = String::new();
+
+    #[cfg(windows)] {
+        fml_vfile_path = home_dir().expect("Could not get HomeDir").display().to_string();
+        fml_vfile_path = fml_vfile_path + "\\.mc-server-manager\\data";
+    }
+    #[cfg(unix)] {
+        fml_vfile_path = home_dir().expect("Could not get HomeDir").display().to_string();
+        fml_vfile_path = fml_vfile_path + "/.mc-server-manager/data"
+    }
+
+    if is_neoforge == true {
+        #[cfg(windows)] {
+        fml_vfile_path = fml_vfile_path + "\\neofml_versions.toml"
+        }
+        #[cfg(unix)] {
+        fml_vfile_path = fml_vfile_path + "/neofml_versions.toml"
+        }
+    } else {
+        #[cfg(windows)] {
+        fml_vfile_path = fml_vfile_path + "\\fml_versions.toml"
+        }
+        #[cfg(unix)] {
+        fml_vfile_path = fml_vfile_path + "/fml_versions.toml"
+        }
+    }
+
+    let mut fml_dl_path = String::new();
+    if is_neoforge == true {
+        fml_dl_path = "https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/data/neofml_versions.toml".to_string();
+    } else {
+        fml_dl_path = "https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/data/fml_versions.toml".to_string();
+    }
+
+    let fml_vfile_content = fs::read_to_string(&fml_vfile_path)
+        .expect("Failed to read local file");
+
+    let fml_vfile_gh = Command::new("curl")
+        .arg("-s")
+        .arg("-L")
+        .arg(fml_dl_path)
+        .output()
+        .expect("Failed to execute curl");
+
+    if !fml_vfile_gh.status.success() {
+        eprintln!("Curl command failed with status: {:?}", fml_vfile_gh.status);
+        std::process::exit(1);
+    }
+
+    let fml_vfile_gh_content = str::from_utf8(&fml_vfile_gh.stdout)
+        .expect("Failed to parse curl output as UTF-8");
+
+    if fml_vfile_content == fml_vfile_gh_content {
+        println!("FML Info Files are up to date.");
+    } else {
+        println!("Updatimg FML Info Files...");
+        fml_vfile_donwload(is_neoforge, fml_vfile_path.clone());
+    }
+}
+
+fn fml_vfile_donwload(is_neoforge: bool, fml_file_path: String) {
+    if is_neoforge == true {
+        Command::new("curl")
+            .args([
+                "-L",
+                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/neofml_versions.toml",
+                "-o",
+                &fml_file_path,
+            ])
+            .output()
+            .expect("Failed to download File");
+    } else {
+        Command::new("curl")
+            .args([
+                "-L",
+                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/fml_versions.toml",
+                "-o",
+                &fml_file_path,
+            ])
+            .output()
+            .expect("Failed to download File"); 
     }
 }
