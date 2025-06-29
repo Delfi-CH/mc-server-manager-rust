@@ -1,25 +1,23 @@
-# mc-server-management
+# mc-server-management-rust
 
-rust tool for managing multiple selfohosted minecraft servers
+rust tool for managing multiple selfohosted minecraft server
 
-THIS APP IS CURRENTLY WORK IN PROGRESS
+**THIS APP IS CURRENTLY WORK IN PROGRESS**
 
-NOT ALL FEATURES WORK FULLY
+**NOT ALL FEATURES FULLY WORK**
 
-FOR MORE INFO LOOK [HERE](https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/TODO.md)
+**FOR MORE INFO LOOK [HERE](https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/TODO.md)**
 
+This app belongs to [delfi-ch/mc-server-panel](https://github.com/Delfi-CH/mc-server-panel). For a general overview of the project, please look there.
 
 ## Requirements
 
 ### Processor:
 
-x86-64 based Processor 
+x86-64 based Processor.
 (Any Intel/AMD Processor released in the last 15 years should work)
 
 ### RAM:
-
-Minimum Amount of RAM needed to run the Operating System
-(eg. Fedora 42 -> 2 Gigabytes) plus Minimum Amount of RAM needed for Minecraft: Java Edition Server -> 1 Gigabyte
 
 Minimum: 4 Gigabytes
 
@@ -89,6 +87,8 @@ Supported Java Runtimes:
 
 - If the command doesn't work right away, try restarting your computer and run the command again.
 
+This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc-server-downloader-py) to download the server.jar files, which is automaticly downloaded on startup.
+
 ### Linux
 
 #### Downloading and Installing Java
@@ -140,6 +140,8 @@ Supported Java Runtimes:
     ```bash
   java -version
   ```
+
+This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc-server-downloader-py) to download the server.jar files, which is automaticly downloaded on startup.
 
 ## Minecraft Support
 
