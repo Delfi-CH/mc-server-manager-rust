@@ -316,7 +316,7 @@ fn add_server() {
         if path.to_lowercase() == "abort" {
             break;
         }
-        let full_path = mk_path_absolute(path);
+        let full_path = win_path_cleaner_path(mk_path_absolute(path));
 
         println!("{}", full_path.display());
 
@@ -401,7 +401,7 @@ fn add_server() {
 }
 
 fn add_server_silent(path: &str) {
-        let full_path = mk_path_absolute(path);
+        let full_path = win_path_cleaner_path(mk_path_absolute(path));
 
         println!("{}", full_path.display());
 
@@ -461,10 +461,15 @@ fn add_server_silent(path: &str) {
                     let path_str = full_path.display().to_string();
                     let clean_path = match fs::canonicalize(&full_path) {
                             Ok(p) => p.display().to_string(),
-                            Err(_) => path_str, // fallback to whatever you have
+                            Err(_) => path_str,
                     };
 
+                    #[cfg(windows)]{                    
+                    server_list.insert(key, win_path_cleaner(&clean_path).to_string());
+                    }
+                    #[cfg(unix)]{                    
                     server_list.insert(key, clean_path.to_string());
+                    }
 
                     cfg_data_toml.system.servers = server_count;
                     cfg_data_toml.server_list.server_list = server_list;
@@ -877,7 +882,7 @@ fn fml_versions_str(mc_version: String, is_neoforge: bool) -> String {
             let version = fml_version_file_toml.get(&mc_version);
 
             if let Some(ver) = version {
-                println!("Version string: {}", ver);
+                println!("Forge Modloader Version : {}", ver);
                 return ver.clone();
             } else {
                 return "An Error Occured".to_string();
@@ -1258,8 +1263,62 @@ fn download_server() {
         dir_path = format!("{}/server{}", base_dir, new_server_id);
         }
 
-        //temp var
-        let version = "1.21.6";
+        println!("What Minecraft Version would you like to download?");
+        println!("A list of supported Versions can be found here:");
+        println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#game-versions");
+        print!("-> ");
+
+        io::stdout().flush().unwrap();
+
+        let mut version = String::new();
+
+        io::stdin()
+        .read_line(&mut version)
+        .expect("Could not read the Input");
+        version = version.trim().to_lowercase();
+
+        //needs more work
+        if version.contains("1.") {
+            println!("E");
+        } else if version.contains("craftmine"){
+            println!("EEE");
+        }
+
+
+        println!("What Modloader would you like to use?");
+        println!("Supported Modloaders are: Vanilla, Forge, Neoforge, Fabric and Paper.");
+        println!("Note that not all Minecraft Versions are supported by every Modloader.");
+        println!("For more info look here:");
+        println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#modloaders");
+        let mut modloader = String::new();
+        loop {
+        
+        print!("-> ");
+
+        io::stdout().flush().unwrap();
+
+        io::stdin()
+        .read_line(&mut modloader)
+        .expect("Could not read the Input");
+        modloader = modloader.trim().to_lowercase();
+
+        if modloader == "vanilla" {
+            break;
+        } else if modloader == "forge" {
+            break;
+        } else if modloader == "neoforge" {
+            break;
+        }  else if modloader == "paper" {
+            break;
+        }  else if modloader == "fabric" {
+            break;
+        } else {
+            println!("Modloader is not supported! Please enter a supported Modloader!");
+            println!("Supported Modloaders are: Vanilla, Forge, Neoforge, Fabric and PaperMC.");
+            modloader = "".to_string();
+        }
+
+        }
 
         let mut has_mcsvdl = cfg_app_data.mcsvdl.has_mcsvdl;
 
@@ -1290,12 +1349,6 @@ fn download_server() {
 
         #[cfg(unix)]
         mcsvdl_tar.push("linux.tar");
-
-        if fs::exists(&mcsvdl_path).expect("Could not check existance of File") == true {
-            has_mcsvdl = true;
-        } else {
-            has_mcsvdl = false;
-        }
         if fs::exists(download_path.clone()).expect("Could not check existance of Directory") == true {
             fs::remove_file(download_path.clone()).expect("Could not delete file");
         }
@@ -1308,20 +1361,41 @@ fn download_server() {
         } else {
             fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         }
-        if has_mcsvdl == false {
-            println!("Downloading Helper Script...");
-            check_mcsvdl(dotpath, mcsvdl_tar);
-        } else {
         check_mcsvdl(dotpath, mcsvdl_tar);
-        println!("{}-{}", mcsvdl_path.display(), dir_path);
-        //needs logic for modloaders
-        println!("Downloading server.jar to {} ...", download_path);
+        println!("Downloading server.jar for {} {} to {} ...", modloader, version ,download_path);
+        let mut fml_version= String::new();
+        if modloader == "forge" {
+            fml_version = fml_versions_str(version.clone(), false);
+
+            Command::new(&mcsvdl_path)
+            .args(&["-v", &version, "-m", &modloader, "-fv", &fml_version ])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Failed to download File");
+
+        } else if modloader == "neoforge" {
+            fml_version = fml_versions_str(version.clone(), true);
+
+            Command::new(&mcsvdl_path)
+            .args(&["-v", &version, "-m", &modloader , "-nfv", &fml_version])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Failed to download File");
+
+        } else  {
         Command::new(&mcsvdl_path)
-        .args(&["-v", "1.21.6", "-m", "vanilla"])
+        .args(&["-v", &version, "-m", &modloader ])
         .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
         }
+
+        // fabric: run installer with "java -jar installer.jar server {mc version}""
+        // then rename the file
+        // paper: nothing
+        // forge: run installer with "java -jar installer.jar --installServer" + exec batch/shell script instead of jar + edit user jvm args
+        // neoforge: run installer with "java -jar installer.jar --install-server" + exec batch/shell script instead of jar + edit user jvm args 
+    
 
         let mut path_windows_dir = String::new();
         let mut path_windows_jar = String::new();
@@ -1329,19 +1403,19 @@ fn download_server() {
         let mut path_unix_jar = String::new();
 
         #[cfg(windows)] {
-        path_windows_dir = dir_path;
-        path_windows_jar = download_path;
+        path_windows_dir = win_path_cleaner(&dir_path).to_string();
+        path_windows_jar = win_path_cleaner(&download_path).to_string();
         path_unix_dir = "File was downloaded on Windows. Please add the path manually".to_string();
         path_unix_jar = "File was downloaded on Windows. Please add the path manually".to_string();
         }
         #[cfg(unix)] {
-        path_windows_dir = "File was downloaded on Unix or a Unix-like OS. Please add the path manually".to_string();
-        path_windows_jar = "File was downloaded on Unix or a Unix-like OS. Please add the path manually".to_string();
+        path_windows_dir = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
+        path_windows_jar = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
         path_unix_dir = dir_path;
         path_unix_jar = download_path;
         }
         println!("Creating .toml File for the server...");
-        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), "1.21.6".to_string(), "vanilla".to_string(), path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
+        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), version, modloader, path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
         println!("Adding .toml file to the configuration...");
         add_server_silent(toml_path.as_str());
         println!("Finished!");
@@ -1578,6 +1652,33 @@ fn create_server_toml(
 }
 
 fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
+
+    let mut has_mcsvdl = false;
+
+    println!("Checking for Helper Script...");
+
+    #[cfg(windows)] {
+    match fs::metadata(dotpath.join("mcsvdl.exe")) {
+            Ok(_) => {
+            has_mcsvdl = true;
+            println!("Checking for Updates...");  
+            }
+            Err(_) => {
+                println!("Helper Script wasnt found!...");  
+            }
+    }}
+    #[cfg(unix)] {
+    match fs::metadata(dotpath.join("mcsvdl")) {
+            Ok(_) => {
+            has_mcsvdl = true;
+            println!("Checking for Updates...");  
+            }
+            Err(_) => {
+                println!("Helper Script wasnt found!...");  
+            }
+    }}
+        
+
     let cfg_app_str = read_cfg_silent();
     let mut cfg_app_data: Config = toml::from_str(&cfg_app_str)
     .expect("Could not parse TOML");
@@ -1600,110 +1701,39 @@ fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
 
     let release_num = release_data.tag_name;
 
+    if has_mcsvdl != cfg_app_data.mcsvdl.has_mcsvdl {
+
+        cfg_app_data.mcsvdl.has_mcsvdl = has_mcsvdl;
+        write_cfg(&cfg_app_data, "config.toml");
+
+    }
+    
+
     if cfg_app_data.mcsvdl.has_mcsvdl == false {
 
         cfg_app_data.mcsvdl.has_mcsvdl = true;
         cfg_app_data.mcsvdl.mcsvdl_version = release_num;
 
-        let mut mcsvdl_path = dotpath.clone();
+        println!("Downloading Helper Script..."); 
 
-        #[cfg(windows)] {
-            Command::new("curl")
-                .args(&[
-                "-L",    
-                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
-                "-o",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-            Command::new("tar") 
-                .args(&[
-                "-xf",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to extract File");
-            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
-            mcsvdl_path.push("mcsvdl.exe");
-                }
-            #[cfg(unix)] {
-            Command::new("curl")
-                .args(&[
-                "-L",    
-                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
-                "-o",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-            Command::new("tar") 
-                .args(&[
-                "-xf",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to untar File");
-            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
-            mcsvdl_path.push("mcsvdl");
-                }
+        dl_mcsvdl(mcsvdl_tar, dotpath);
+
         write_cfg(&cfg_app_data, "config.toml");
             
 
     } else if release_num != cfg_app_data.mcsvdl.mcsvdl_version {
 
+        println!("Updating Helper Script..."); 
+
         cfg_app_data.mcsvdl.mcsvdl_version = release_num;
         write_cfg(&cfg_app_data, "config.toml");
 
-        #[cfg(windows)] {
-            Command::new("curl")
-                .args(&[
-                "-L",    
-                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
-                "-o",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-            Command::new("tar") 
-                .args(&[
-                "-xf",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to extract File");
-            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
-                }
-            #[cfg(unix)] {
-            Command::new("curl")
-                .args(&[
-                "-L",    
-                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
-                "-o",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to download File");
-            Command::new("tar") 
-                .args(&[
-                "-xf",
-                &mcsvdl_tar.display().to_string(),
-                ])
-                .current_dir(&dotpath)
-                .output()
-                .expect("Failed to untar File");
-            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
-                }
+        dl_mcsvdl(mcsvdl_tar, dotpath);
 
-
+    } else {
+        println!("Helper Script up to date!");
     }
+    println!("Finished!"); 
 }
 
 fn check_fml_vfile_updates(is_neoforge: bool) {
@@ -1790,4 +1820,67 @@ fn fml_vfile_donwload(is_neoforge: bool, fml_file_path: String) {
             .output()
             .expect("Failed to download File"); 
     }
+}
+
+fn win_path_cleaner(path: &str) -> &str {
+    if path.starts_with(r"\\?\") {
+        &path[4..]
+    } else {
+        path
+    }
+}
+
+
+fn win_path_cleaner_path(path: PathBuf) -> PathBuf {
+    let s = path.to_string_lossy();
+    if s.starts_with(r"\\?\") {
+        PathBuf::from(&s[4..])
+    } else {
+        path.to_path_buf()
+    }
+}
+
+fn dl_mcsvdl(mcsvdl_tar: PathBuf, dotpath: PathBuf) {
+            #[cfg(windows)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to extract File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+                }
+            #[cfg(unix)] {
+            Command::new("curl")
+                .args(&[
+                "-L",    
+                "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+                "-o",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to download File");
+            Command::new("tar") 
+                .args(&[
+                "-xf",
+                &mcsvdl_tar.display().to_string(),
+                ])
+                .current_dir(&dotpath)
+                .output()
+                .expect("Failed to untar File");
+            fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+                }
 }
