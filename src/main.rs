@@ -154,78 +154,7 @@ struct Release {
     tag_name: String,
 }
 
-// Struct for the ForgeModLoader versions file
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FmlVersionsFile {
-    #[serde(rename = "1.21.6")]
-    _1_21_6: String,
-    #[serde(rename = "1.21.5")]
-    _1_21_5: String,
-    #[serde(rename = "1.21.4")]
-    _1_21_4: String,
-    #[serde(rename = "1.21.3")]
-    _1_21_3: String,
-    #[serde(rename = "1.21.1")]
-    _1_21_1: String,
-    #[serde(rename = "1.20.6")]
-    _1_20_6: String,
-    #[serde(rename = "1.20.4")]
-    _1_20_4: String,
-    #[serde(rename = "1.20.2")]
-    _1_20_2: String,
-    #[serde(rename = "1.20.1")]
-    _1_20_1: String,
-    #[serde(rename = "1.19.4")]
-    _1_19_4: String,
-    #[serde(rename = "1.18.2")]
-    _1_18_2: String,
-    #[serde(rename = "1.17.1")]
-    _1_17_1: String,
-    #[serde(rename = "1.16.5")]
-    _1_16_5: String,
-    #[serde(rename = "1.16.2")]
-    _1_16_2: String,
-    #[serde(rename = "1.16.1")]
-    _1_16_1: String,
-    #[serde(rename = "1.15.2")]
-    _1_15_2: String,
-    #[serde(rename = "1.14.4")]
-    _1_14_4: String,
-    #[serde(rename = "1.13.2")]
-    _1_13_2: String,
-    #[serde(rename = "1.12.2")]
-    _1_12_2: String,
-    #[serde(rename = "1.11.2")]
-    _1_11_2: String,
-    #[serde(rename = "1.10.2")]
-    _1_10_2: String,
-    #[serde(rename = "1.9.4")]
-    _1_9_4: String,
-    #[serde(rename = "1.8.9")]
-    _1_8_9: String,
-    #[serde(rename = "1.7.10")]
-    _1_7_10: String,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct NeoFmlVersionsFile {
-    #[serde(rename = "1.21.6")]
-    _1_21_6: String,
-    #[serde(rename = "1.21.5")]
-    _1_21_5: String,
-    #[serde(rename = "1.21.4")]
-    _1_21_4: String,
-    #[serde(rename = "1.21.3")]
-    _1_21_3: String,
-    #[serde(rename = "1.21.1")]
-    _1_21_1: String,
-    #[serde(rename = "1.20.6")]
-    _1_20_6: String,
-    #[serde(rename = "1.20.4")]
-    _1_20_4: String,
-    #[serde(rename = "1.20.2")]
-    _1_20_2: String,
-}
+type FmlVersionsFile = HashMap<String, String>;
 
 //fn main
 fn main() {
@@ -484,8 +413,6 @@ fn add_server_silent(path: &str) {
                         return;
                     }
 
-                    println!("step1");
-
                     let cfg_data_str = read_cfg_silent();
                     let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
                         Ok(cfg) => cfg,
@@ -494,7 +421,6 @@ fn add_server_silent(path: &str) {
                             return;
                         }
                     };
-                     println!("step2");
 
                     let server_toml_str = match fs::read_to_string(&full_path) {
                         Ok(s) => s,
@@ -512,8 +438,6 @@ fn add_server_silent(path: &str) {
                         }
                     };
 
-                     println!("step3");
-
                     let is_windows = cfg_data_toml.system.os_mini == "win";
 
                     let jar_path = if is_windows {
@@ -526,8 +450,6 @@ fn add_server_silent(path: &str) {
                         println!("Jar path does not exist: {}", jar_path);
                         return;
                     }
-
-                     println!("step4");
 
                     let mut server_list = cfg_data_toml.server_list.server_list.clone();
 
@@ -545,11 +467,8 @@ fn add_server_silent(path: &str) {
 
                     cfg_data_toml.system.servers = server_count;
                     cfg_data_toml.server_list.server_list = server_list;
-                     println!("step5");
 
                     write_cfg(&cfg_data_toml, "config.toml");
-
-                     println!("step6");
 
                     return;
                 }
@@ -947,9 +866,17 @@ fn fml_versions_str(mc_version: String, is_neoforge: bool) -> String {
     }
     loop {
     match File::open(&fml_file_path) {
-        Ok(fml_version_file) => {
+        Ok(_) => {
             let fml_version_file_str = fs::read_to_string(fml_file_path).expect("Could not read File");
-            let fml_version_file_toml: Config = toml::from_str(&fml_version_file_str).expect("Could not parse TOML");
+            let fml_version_file_toml: FmlVersionsFile = toml::from_str(&fml_version_file_str)
+                .expect("Could not parse TOML");
+
+            let version = fml_version_file_toml.get(&mc_version);
+
+            if let Some(ver) = version {
+                println!("Version string: {}", ver);
+            }
+
             return fml_version_file_str;
         }
         Err(_) => {
