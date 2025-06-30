@@ -179,7 +179,6 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - 1.15.2
 - Minecraft 1.14.x
   - 1.14.4
-  - 3D Shareware v1.34 (April Fools)
 - Minecraft 1.13.x
   - 1.13.2
 - Minecraft 1.12.x
