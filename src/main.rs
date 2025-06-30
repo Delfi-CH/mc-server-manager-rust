@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
 use std::env::{self};
 use std::io::{self, Read, Write};
-use std::fs::{self, File};
+use std::fs::{self, read_to_string, File};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use dir::{home_dir};
@@ -1266,6 +1266,7 @@ fn download_server() {
         println!("What Minecraft Version would you like to download?");
         println!("A list of supported Versions can be found here:");
         println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#game-versions");
+        println!("Type abort to abort.");
         print!("-> ");
 
         io::stdout().flush().unwrap();
@@ -1282,6 +1283,9 @@ fn download_server() {
             println!("E");
         } else if version.contains("craftmine"){
             println!("EEE");
+        } else if version.contains("abort") {
+            println!("Aborting...");
+            return;
         }
 
 
@@ -1290,6 +1294,7 @@ fn download_server() {
         println!("Note that not all Minecraft Versions are supported by every Modloader.");
         println!("For more info look here:");
         println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#modloaders");
+        println!("Type abort to abort.");
         let mut modloader = String::new();
         loop {
         
@@ -1312,6 +1317,9 @@ fn download_server() {
             break;
         }  else if modloader == "fabric" {
             break;
+        } else if modloader == "abort" {
+            println!("Aborting...");
+            return;
         } else {
             println!("Modloader is not supported! Please enter a supported Modloader!");
             println!("Supported Modloaders are: Vanilla, Forge, Neoforge, Fabric and PaperMC.");
@@ -1362,7 +1370,7 @@ fn download_server() {
             fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         }
         check_mcsvdl(dotpath, mcsvdl_tar);
-        println!("Downloading server.jar for {} {} to {} ...", modloader, version ,download_path);
+        println!("Downloading Server.jar for {} {} to {} ...", modloader, version ,download_path);
         let mut fml_version= String::new();
         if modloader == "forge" {
             fml_version = fml_versions_str(version.clone(), false);
@@ -1382,25 +1390,71 @@ fn download_server() {
             .output()
             .expect("Failed to download File");
 
-        } else  {
+        } else if modloader == "fabric" {
+        println!("Downloading Fabric installer...");
+        Command::new(&mcsvdl_path)
+        .args(&["-v", &version, "-m", &modloader ])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Failed to download File");
+        println!("Downloading Server.jar...");
+        Command::new(&mcsvdl_path)
+        .args(&["-v", &version, "-m", "vanilla" ])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Failed to download File");
+        println!("Applying Fabric installer...");
+        Command::new("java")
+        .args(&["-jar", "installer.jar", "server", &version])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Could not apply the fabric installer!");
+        } else {
         Command::new(&mcsvdl_path)
         .args(&["-v", &version, "-m", &modloader ])
         .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
         }
-
-        // fabric: run installer with "java -jar installer.jar server {mc version}""
-        // then rename the file
-        // paper: nothing
+        
         // forge: run installer with "java -jar installer.jar --installServer" + exec batch/shell script instead of jar + edit user jvm args
-        // neoforge: run installer with "java -jar installer.jar --install-server" + exec batch/shell script instead of jar + edit user jvm args 
-    
+        // neoforge: run installer with "java -jar installer.jar --install-server" + exec batch/shell script instead of jar + edit user jvm args
+        let mut eulapath = String::new();
+        #[cfg(windows)] {
+            eulapath = dir_path.clone() + "\\eula.txt"
+        }
+        #[cfg(unix)] {
+            eulapath = dir_path.clone + "/eula.txt";
+        }
+
+        println!("Creating eula.txt...");
+
+        let mut eulafile = File::create(eulapath).expect("Could not create eula.txt");
+
+        eulafile
+            .write_all("eula = true".as_bytes())
+            .expect("Could not write to file");
 
         let mut path_windows_dir = String::new();
         let mut path_windows_jar = String::new();
         let mut path_unix_dir = String::new();
         let mut path_unix_jar = String::new();
+
+        if modloader == "fabric" {
+            #[cfg(windows)] {
+                path_windows_dir = win_path_cleaner(&dir_path).to_string();
+                path_windows_jar = win_path_cleaner(&dir_path).to_string() + "\\fabric-server-launch.jar";
+                path_unix_dir = "File was downloaded on Windows. Please add the path manually".to_string();
+                path_unix_jar = "File was downloaded on Windows. Please add the path manually".to_string();
+            }
+            #[cfg(unix)] {
+            path_windows_dir = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
+            path_windows_jar = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
+            path_unix_dir = dir_path;
+            path_unix_jar = dir_path + "/fabric-server-launch.jar";
+            }
+
+        } else {
 
         #[cfg(windows)] {
         path_windows_dir = win_path_cleaner(&dir_path).to_string();
@@ -1414,13 +1468,14 @@ fn download_server() {
         path_unix_dir = dir_path;
         path_unix_jar = download_path;
         }
+        }
         println!("Creating .toml File for the server...");
-        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), version, modloader, path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, PORT_DEFAULT);
+        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), version, modloader, path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, agree_eula ,PORT_DEFAULT);
         println!("Adding .toml file to the configuration...");
         add_server_silent(toml_path.as_str());
         println!("Finished!");
     }
-        }
+}
         
 fn start_toml() {
     let cfg_app_str = read_cfg_silent();
@@ -1611,6 +1666,7 @@ fn create_server_toml(
     path_unix_jar: String,   
     min_mem: i32,
     max_mem: i32,
+    eula: bool,
     port: i32,)  {
 
     let mut server_toml = File::create(toml_path).expect("Could not create file");
@@ -1639,7 +1695,7 @@ fn create_server_toml(
     .expect("Could not write to file");
     server_toml.write_all(format!("max_mem = {} \n", max_mem.to_string().trim()).as_bytes())
     .expect("Could not write to file");
-    server_toml.write_all("eula = false\n".as_bytes())
+    server_toml.write_all(format!("eula = {} \n", eula.to_string().trim()).as_bytes())
     .expect("Could not write to file");
     server_toml.write_all("running = false\n".as_bytes())
     .expect("Could not write to file");
@@ -1719,6 +1775,8 @@ fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
         dl_mcsvdl(mcsvdl_tar, dotpath);
 
         write_cfg(&cfg_app_data, "config.toml");
+
+        println!("Finished!"); 
             
 
     } else if release_num != cfg_app_data.mcsvdl.mcsvdl_version {
@@ -1733,7 +1791,7 @@ fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
     } else {
         println!("Helper Script up to date!");
     }
-    println!("Finished!"); 
+    
 }
 
 fn check_fml_vfile_updates(is_neoforge: bool) {
