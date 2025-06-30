@@ -14,7 +14,8 @@ NO Multithreading + NO WebUI
 - Rewrite start_manual into 2 Functions [DONE]
 - server TOML and config.toml parsing [DONE]
 - stopping servers with jps -l and kill \<PID> or taskkill /PID \ <PID>
-- download all versions of mc java aswell as modloaders
+- download all versions of mc java aswell as modloaders [DONE]
+- edit server.properties and user_jvm_args.txt
 
 ## Stage 2
 
