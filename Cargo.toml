@@ -2,6 +2,11 @@
 name = "mc_server_panel"
 version = "0.0.7"
 edition = "2024"
+readme = "README.md"
+homepage = "https://github.com/Delfi-CH/mc-server-manager-rust"
+repository = "https://github.com/Delfi-CH/mc-server-manager-rust"
+license = "GPL-3.0-or-later"
+keywords = ["minecraft", "minecraft server", "selfhosted", "commandline"]
 
 
 [dependencies]
