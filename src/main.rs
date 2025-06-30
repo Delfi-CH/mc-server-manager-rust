@@ -284,11 +284,6 @@ fn main() {
             "list" => {
                 list_servers();
             }
-            //will be removed in non dev builds
-            "dev" => {
-                let e = fml_versions_str("1.21.6".to_string(), false);
-                println!("{}", e);
-            }
             _ => {
                 println!("'{}' is not a valid Action", input);
             }
@@ -441,15 +436,22 @@ fn add_server_silent(path: &str) {
 
                     let is_windows = cfg_data_toml.system.os_mini == "win";
 
+                    let is_forge = server_toml_toml.server_config.modloader.contains("forge");
+
+                    
+
                     let jar_path = if is_windows {
                         &server_toml_toml.server_config.path_windows_jar
                     } else {
                         &server_toml_toml.server_config.path_unix_jar
                     };
+                    if is_forge == false {
 
                     if let Err(_) = fs::metadata(jar_path) {
                         println!("Jar path does not exist: {}", jar_path);
                         return;
+                    }
+
                     }
 
                     let mut server_list = cfg_data_toml.server_list.server_list.clone();
@@ -1078,8 +1080,6 @@ fn start_manual() {
                 if !agree_eula {
                     break;
                 }
-
-                // Write agreement
                 let _ = fs::write(&eula_path, "eula = true");
 
                 println!("Set the minimum amount of RAM for the Server in MB");
@@ -1103,7 +1103,7 @@ fn start_manual() {
                     path_to_jar
                 );
 
-                let (has_server_started, pid) = start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula);
+                let (has_server_started, pid) = start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula, false);
 
                 if has_server_started == true {
                     println!("Server started sucessfuly with ProcessID (PID) {}", pid);
@@ -1120,7 +1120,7 @@ fn start_manual() {
     }
 }
 
-fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool) -> (bool, String) {
+fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool, is_fml: bool) -> (bool, String) {
     if !eula {
         return (false, "no_start".to_string());
     }
@@ -1132,6 +1132,8 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
     let cfg_app_data: Config = toml::from_str(&cfg_app_str).expect("Could not parse TOML");
 
     let mut server: Option<Child> = None;
+
+    if is_fml == false {
 
     if cfg_app_data.system.os.to_lowercase().contains("windows") {
         #[cfg(windows)]
@@ -1154,7 +1156,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
                     .expect("Failed to start Java process"),
             );
 
-            thread::sleep(Duration::from_secs(5));
+            thread::sleep(Duration::from_secs(30));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
             let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
@@ -1190,7 +1192,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
 
         server = Some(spawn_server.spawn().expect("Failed to spawn detached Java process"));
         }
-            thread::sleep(Duration::from_secs(5));
+            thread::sleep(Duration::from_secs(30));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
             let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
@@ -1202,7 +1204,75 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
             }
         }
     }
+    } else {
+        if cfg_app_data.system.os.to_lowercase().contains("windows") {
+            #[cfg(windows)]
+        {
+            server = Some(
+                Command::new(jar_path)
+                    .current_dir(command_path)
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()
+                    .expect("Failed to spawn Server via run.bat"),
+            );
 
+            thread::sleep(Duration::from_secs(30));
+
+            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+            if jps_str.contains("forge") {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+            if jps_str.contains("mod") {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+        }
+        } else if cfg_app_data.system.os_mini.contains("unix")  {
+        #[cfg(unix)]
+        { unsafe {
+            let mut spawn_server = Command::new(jar_path);
+            spawn_server
+            .current_dir(command_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
+            unsafe {
+                spawn_server.before_exec(|| {
+                    libc::setsid();
+                    Ok(())
+                });
+            }
+
+        server = Some(spawn_server.spawn().expect("Failed to spawn Server via run.sh"));
+        }
+            thread::sleep(Duration::from_secs(30));
+
+            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+            if jps_str.contains("forge") {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+            if jps_str.contains("mod") {
+                if let Some(ref srv) = server {
+                    return (true, srv.id().to_string());
+                }
+            }
+        }
+        }
+
+    }
     (false, "no_start".to_string())
 }
 
@@ -1452,20 +1522,36 @@ fn download_server() {
         if modloader == "forge" {
             fml_version = fml_versions_str(version.clone(), false);
 
+            println!("Downloading Forge installer...");
             Command::new(&mcsvdl_path)
             .args(&["-v", &version, "-m", &modloader, "-fv", &fml_version ])
             .current_dir(&dir_path)
             .output()
             .expect("Failed to download File");
 
+            println!("Executing Installer...");
+            Command::new("java")
+            .args(&["-jar", "installer.jar", "--installServer"])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Could not apply the fabric installer!");
+
         } else if modloader == "neoforge" {
             fml_version = fml_versions_str(version.clone(), true);
 
+            println!("Downloading NeoForge installer...");
             Command::new(&mcsvdl_path)
             .args(&["-v", &version, "-m", &modloader , "-nfv", &fml_version])
             .current_dir(&dir_path)
             .output()
             .expect("Failed to download File");
+
+            println!("Executing Installer...");
+            Command::new("java")
+            .args(&["-jar", "installer.jar", "--install-server"])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Could not apply the fabric installer!");
 
         } else if modloader == "fabric" {
 
@@ -1475,13 +1561,15 @@ fn download_server() {
         .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
+
         println!("Downloading Server.jar...");
         Command::new(&mcsvdl_path)
         .args(&["-v", &version, "-m", "vanilla" ])
         .current_dir(&dir_path)
         .output()
         .expect("Failed to download File");
-        println!("Applying Fabric installer...");
+
+        println!("Executing Installer...");
         Command::new("java")
         .args(&["-jar", "installer.jar", "server", &version])
         .current_dir(&dir_path)
@@ -1531,6 +1619,20 @@ fn download_server() {
             path_windows_jar = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
             path_unix_dir = dir_path;
             path_unix_jar = dir_path + "/fabric-server-launch.jar";
+            }
+
+        } else if modloader.contains("forge"){
+            #[cfg(windows)] {
+                path_windows_dir = win_path_cleaner(&dir_path).to_string();
+                path_windows_jar = win_path_cleaner(&dir_path).to_string() + "\\run.bat";
+                path_unix_dir = "File was downloaded on Windows. Please add the path manually".to_string();
+                path_unix_jar = "File was downloaded on Windows. Please add the path manually".to_string();
+            }
+            #[cfg(unix)] {
+            path_windows_dir = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
+            path_windows_jar = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
+            path_unix_dir = dir_path;
+            path_unix_jar = dir_path + "/run.sh";
             }
 
         } else {
@@ -1685,10 +1787,12 @@ fn start_toml() {
         let path_to_jar = Path::new(&path_jar_str);
         let path_server_dir = Path::new(&path_dir_str);
 
+        let is_fml = cfg_server_toml.server_config.modloader.contains("forge");
+
         println!("Starting Server...");
 
         let (has_server_started, server_pid) =
-            start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula);
+            start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula, is_fml);
 
         if has_server_started {
             println!("Server started successfully!");
