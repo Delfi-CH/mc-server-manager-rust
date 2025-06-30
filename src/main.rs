@@ -1465,11 +1465,14 @@ fn download_server() {
         }  else if modloader == "fabric" {
             is_ml_set = true;
             break;
-        } else if modloader == "abort" {
+        }  else if modloader == "abort" {
             is_ml_set = true;
             println!("Aborting...");
             return;
-        } else {
+        }   else if modloader == "folia" {
+            is_ml_set = true;
+            break;
+        }  else {
             println!("Modloader is not supported! Please enter a supported Modloader!");
             println!("Supported Modloaders are: Vanilla, Forge, Neoforge, Fabric and PaperMC.");
             modloader = "".to_string();
@@ -1583,7 +1586,7 @@ fn download_server() {
         .output()
         .expect("Failed to download File");
         }
-        
+
         let mut eulapath = String::new();
         #[cfg(windows)] {
             eulapath = dir_path.clone() + "\\eula.txt"

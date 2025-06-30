@@ -23,6 +23,10 @@ Make the CLI Tool into a CLI-App and a Libary and Multithread it
 
 Make Backend Entry for WebUI
 
+### Features
+
+- Install Mods
+
 ## Stage 3
 
 Make WebUI in JS

@@ -208,6 +208,8 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - Minecraft 1.18.2 - 1.21.6
 - PaperMC
   - Minecraft 1.9.4 - 1.21.5
+- Folia
+  - Minecraft 1.19.4 - 1.21.6
 
 Note that Versions labled "April Fools" cannot be run with any modloaders.
 ## Configuration
