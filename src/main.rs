@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
 use std::env::{self};
 use std::io::{self, Read, Write};
-use std::fs::{self, read_to_string, File};
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use dir::{home_dir};
@@ -1267,25 +1267,96 @@ fn download_server() {
         println!("A list of supported Versions can be found here:");
         println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#game-versions");
         println!("Type abort to abort.");
+        let mut version = String::new();
+        let mut modloader = String::new();
+        let mut version_display = String::new();
+        let mut modloader_display = String::new();
+        let mut is_ml_set = false;
+        loop {
         print!("-> ");
 
         io::stdout().flush().unwrap();
 
-        let mut version = String::new();
-
         io::stdin()
         .read_line(&mut version)
         .expect("Could not read the Input");
+        version_display = version.trim().to_string();
         version = version.trim().to_lowercase();
 
         //needs more work
-        if version.contains("1.") {
-            println!("E");
-        } else if version.contains("craftmine"){
-            println!("EEE");
+        if version.contains("1.7.10") {
+            break;
         } else if version.contains("abort") {
             println!("Aborting...");
             return;
+        } else if version.contains("1.8.9") {
+            break;
+        } else if version.contains("1.9.4") {
+            break;
+        } else if version.contains("1.10.2") {
+            break;
+        } else if version.contains("1.11.2") {
+            break;
+        } else if version.contains("1.12.2") {
+            break;
+        } else if version.contains("1.13.2") {
+            break;
+        } else if version.contains("1.14.4") {
+            break;
+        } else if version.contains("1.15.2") {
+            break;
+        } else if version.contains("1.16.") {
+            break;
+        } else if version.contains("1.17.1") {
+            break;
+        } else if version.contains("1.18.2") {
+            break;
+        } else if version.contains("1.19.4") {
+            break;
+        } else if version.contains("1.20.") {
+            break;
+        } else if version.contains("1.21.") {
+            break;
+        } else if version.contains("craftmine") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else if version.contains("potato") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else if version.contains("a_or_b") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else if version.contains("oneblockatatime") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else if version.contains("infinite") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else if version.contains("1.RV-Pre1") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else if version.contains("15w14a") {
+            modloader = "vanilla".to_string();
+            modloader_display = "Vanilla".to_string();
+            is_ml_set = true;
+            break;
+        } else {
+            println!("Version {} is not supported! Please enter a valid Version!", version);
+            version = "".to_string();
+        }
+    
         }
 
 
@@ -1295,8 +1366,9 @@ fn download_server() {
         println!("For more info look here:");
         println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#modloaders");
         println!("Type abort to abort.");
-        let mut modloader = String::new();
-        loop {
+        
+        while is_ml_set == false {
+
         
         print!("-> ");
 
@@ -1305,19 +1377,26 @@ fn download_server() {
         io::stdin()
         .read_line(&mut modloader)
         .expect("Could not read the Input");
+        modloader_display = modloader.trim().to_string();
         modloader = modloader.trim().to_lowercase();
 
         if modloader == "vanilla" {
+            is_ml_set = true;
             break;
         } else if modloader == "forge" {
+            is_ml_set = true;
             break;
         } else if modloader == "neoforge" {
+            is_ml_set = true;
             break;
         }  else if modloader == "paper" {
+            is_ml_set = true;
             break;
         }  else if modloader == "fabric" {
+            is_ml_set = true;
             break;
         } else if modloader == "abort" {
+            is_ml_set = true;
             println!("Aborting...");
             return;
         } else {
@@ -1327,8 +1406,6 @@ fn download_server() {
         }
 
         }
-
-        let mut has_mcsvdl = cfg_app_data.mcsvdl.has_mcsvdl;
 
         let mut dotpath: PathBuf = home_dir().expect("Could not get home dir");
 
@@ -1370,7 +1447,7 @@ fn download_server() {
             fs::create_dir(dir_path.clone()).expect("Could not create Directory.");
         }
         check_mcsvdl(dotpath, mcsvdl_tar);
-        println!("Downloading Server.jar for {} {} to {} ...", modloader, version ,download_path);
+        println!("Downloading Server.jar for {} {} to {} ...", modloader_display, version_display ,download_path);
         let mut fml_version= String::new();
         if modloader == "forge" {
             fml_version = fml_versions_str(version.clone(), false);
@@ -1391,6 +1468,7 @@ fn download_server() {
             .expect("Failed to download File");
 
         } else if modloader == "fabric" {
+
         println!("Downloading Fabric installer...");
         Command::new(&mcsvdl_path)
         .args(&["-v", &version, "-m", &modloader ])
@@ -1409,6 +1487,7 @@ fn download_server() {
         .current_dir(&dir_path)
         .output()
         .expect("Could not apply the fabric installer!");
+
         } else {
         Command::new(&mcsvdl_path)
         .args(&["-v", &version, "-m", &modloader ])
@@ -1416,7 +1495,7 @@ fn download_server() {
         .output()
         .expect("Failed to download File");
         }
-        
+
         // forge: run installer with "java -jar installer.jar --installServer" + exec batch/shell script instead of jar + edit user jvm args
         // neoforge: run installer with "java -jar installer.jar --install-server" + exec batch/shell script instead of jar + edit user jvm args
         let mut eulapath = String::new();
@@ -1919,6 +1998,7 @@ fn dl_mcsvdl(mcsvdl_tar: PathBuf, dotpath: PathBuf) {
                 .output()
                 .expect("Failed to extract File");
             fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+            fs::remove_file(dotpath.join("LICENSE")).expect("Failed to remove File");
                 }
             #[cfg(unix)] {
             Command::new("curl")
@@ -1940,5 +2020,6 @@ fn dl_mcsvdl(mcsvdl_tar: PathBuf, dotpath: PathBuf) {
                 .output()
                 .expect("Failed to untar File");
             fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
+            fs::remove_file(dotpath.join("LICENSE")).expect("Failed to remove File");            
                 }
 }
