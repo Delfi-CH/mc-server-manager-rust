@@ -1583,15 +1583,13 @@ fn download_server() {
         .output()
         .expect("Failed to download File");
         }
-
-        // forge: run installer with "java -jar installer.jar --installServer" + exec batch/shell script instead of jar + edit user jvm args
-        // neoforge: run installer with "java -jar installer.jar --install-server" + exec batch/shell script instead of jar + edit user jvm args
+        
         let mut eulapath = String::new();
         #[cfg(windows)] {
             eulapath = dir_path.clone() + "\\eula.txt"
         }
         #[cfg(unix)] {
-            eulapath = dir_path.clone + "/eula.txt";
+            eulapath = dir_path.clone() + "/eula.txt";
         }
 
         println!("Creating eula.txt...");
