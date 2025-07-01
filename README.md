@@ -1,22 +1,23 @@
-# mc-server-management
+# mc-server-management-rust
 
-rust tool for managing multiple selfohosted minecraft servers
+rust tool for managing multiple selfohosted minecraft server
 
-CURRENTLY WORK IN PROGRESS!
-DO NOT USE
-NOT ALL FEATURES ARE IMPLEMENTED
-FOR MORE INFO SEE [HERE](https://github.com/Delfi-CH/mc-server-management/blob/main/TODO.md)
+**THIS APP IS CURRENTLY WORK IN PROGRESS**
+
+**NOT ALL FEATURES FULLY WORK**
+
+**FOR MORE INFO LOOK [HERE](https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/TODO.md)**
+
+This app belongs to [delfi-ch/mc-server-panel](https://github.com/Delfi-CH/mc-server-panel). For a general overview of the project, please look there.
 
 ## Requirements
 
 ### Processor:
 
-x86-64 based Processor (Intel/AMD)
+x86-64 based Processor.
+(Any Intel/AMD Processor released in the last 15 years should work)
 
 ### RAM:
-
-Minimum Amount of RAM needed to run the Operating System
-(eg. Fedora 42 -> 2 Gigabytes) plus Minimum Amount of RAM needed for Minecraft: Java Edition Server -> 1 Gigabyte
 
 Minimum: 4 Gigabytes
 
@@ -64,7 +65,7 @@ Supported Java Runtimes:
 #### Downloading and Installing Java
 - Visit the official JDK 24 website: [https://jdk.java.net/24/](https://jdk.java.net/24/)
 - Download the ZIP archive for Windows.
-- Unzip the downloaded archive to a safe and convenient location on your computer (eg:  `C:\Java\jdk-24`).
+- Unzip the downloaded archive to a safe and convenient location on your computer (eg: `C:\Java\jdk-24`).
 - Locate the `java.exe` file inside the extracted folder (typically in the `bin` directory).
 - Copy the full path to the `bin` folder.
 - Add this path to your system's **PATH** environment variable:
@@ -85,6 +86,8 @@ Supported Java Runtimes:
 - If Java is installed correctly, you’ll see the version information displayed.
 
 - If the command doesn't work right away, try restarting your computer and run the command again.
+
+This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc-server-downloader-py) to download the server.jar files, which is automaticly downloaded on startup.
 
 ### Linux
 
@@ -138,6 +141,8 @@ Supported Java Runtimes:
   java -version
   ```
 
+This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc-server-downloader-py) to download the server.jar files, which is automaticly downloaded on startup.
+
 ## Minecraft Support
 
 ### Game Versions
@@ -174,7 +179,6 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - 1.15.2
 - Minecraft 1.14.x
   - 1.14.4
-  - 3D Shareware v1.34 (April Fools)
 - Minecraft 1.13.x
   - 1.13.2
 - Minecraft 1.12.x
@@ -190,23 +194,27 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - 1.7.10
 
 - Minecraft 1.0.x - 1.7.x
-    - We currently dont support these versions.
+    - We dont support these versions.
 
 ### Modloaders
 
 - Forge:
-  - Minecraft 1.7.10 - 1.21.6
+  - Forge is a open-source Minecraft Modding API and Modloader. It has existed for a long time and is compatible with most Minecraft versions. 
+  - Supports: Minecraft 1.7.10 - 1.21.6
 - NeoForge:
-  - Minecraft 1.20.2 - 1.21.6
+  - NeoForge is a fork of Forge, developed by most of the Team behind Forge. It aims for better features for Mod-Developers and only supports newer Versions of Minecraft.
+  - Supports: Minecraft 1.20.2 - 1.21.6
 - Fabric
-  - Minecraft 1.14.4 - 1.21.6
-- Quilt
-  - Minecraft 1.18.2 - 1.21.6
+  - Fabric is a open-source Modloader. It is more lightweight and modular than Forge and supports many more recent versions of the Game.
+  - Supports: Minecraft 1.14.4 - 1.21.6
 - PaperMC
-  - Minecraft 1.9.4 - 1.21.5
+  - Paper is a modified Server-Software which aims to improve Performance and introduces a Plugin API. It is compatible with most Versions of the game and doesnt require a modified Client.
+  - Supports: Minecraft 1.9.4 - 1.21.5
+- Folia
+  - Folia is a fork of Paper, developed by mostly the same Team behind Paper, which adds Multithreading for improved Performance.
+  - Supports: Minecraft 1.19.4 - 1.21.6
 
-Note that the April Fools Versions are not supported by Modloaders
-
+Note that Versions labled "April Fools" cannot be run with any modloaders.
 ## Configuration
 
 For configuring the app, TOML (Tom's Obvious Minimal Language) is beeing used. You can read more about it [here](https://toml.io/)
@@ -229,6 +237,6 @@ THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
 
 This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).
 For more information, please visit https://www.gnu.org/licenses/gpl-3.0
-However, this program can download and execute the propritary licensed Minecraft server.jar via seperate processes.
+However, this program can download and execute the proprietary licensed Minecraft server.jar via seperate processes.
 These functions require agreeing to the Minecraft End User License Agreement (EULA).
 For more information, please visit https://www.minecraft.net/en-us/eula.

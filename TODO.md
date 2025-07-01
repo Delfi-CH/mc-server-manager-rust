@@ -13,14 +13,19 @@ NO Multithreading + NO WebUI
 - Rework config file from app.cfg to config.toml [DONE]
 - Rewrite start_manual into 2 Functions [DONE]
 - server TOML and config.toml parsing [DONE]
-- stopping servers with jps -l and kill \<PID> or taskkill /PID \   <PID>
-- download all versions of mc java aswell as modloaders
+- stopping servers with jps -l and kill \<PID> or taskkill /PID \ <PID> [DONE]
+- download all versions of mc java aswell as modloaders [DONE]
+- edit server.properties and user_jvm_args.txt
 
 ## Stage 2
 
 Make the CLI Tool into a CLI-App and a Libary and Multithread it
 
 Make Backend Entry for WebUI
+
+### Features
+
+- Install Mods
 
 ## Stage 3
 
