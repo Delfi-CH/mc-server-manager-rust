@@ -283,6 +283,16 @@ fn main() {
                 println!("For more information, please visit https://www.minecraft.net/en-us/eula.");
                 println!();
             }
+            "dev" =>{
+                io::stdout().flush().expect("Failed to flush stdout");
+
+                let mut eee = String::new();
+                 io::stdin()
+                .read_line(&mut eee)
+                .expect("Failed to read path");
+                println!("{}", eee);
+                stop_server(eee);
+            }
             "list" => {
                 list_servers();
             }
@@ -298,7 +308,7 @@ fn add_server() {
         println!("Enter file path:");
         println!("Type abort to exit.");
         print!("-> ");
-            io::stdout().flush().expect("Failed to flush stdout");
+        io::stdout().flush().expect("Failed to flush stdout");
 
         let mut input_path = String::new();
         io::stdin()
@@ -1956,14 +1966,17 @@ fn check_mcsvdl(dotpath: PathBuf, mcsvdl_tar: PathBuf) {
 fn check_fml_vfile_updates(is_neoforge: bool) {
 
     let mut fml_vfile_path = String::new();
+    let mut datadir = String::new();
 
     #[cfg(windows)] {
         fml_vfile_path = home_dir().expect("Could not get HomeDir").display().to_string();
         fml_vfile_path = fml_vfile_path + "\\.mc-server-manager\\data";
+        datadir = home_dir().expect("Could not get HomeDir").display().to_string() + "\\.mc-server-manager\\data";
     }
     #[cfg(unix)] {
         fml_vfile_path = home_dir().expect("Could not get HomeDir").display().to_string();
-        fml_vfile_path = fml_vfile_path + "/.mc-server-manager/data"
+        fml_vfile_path = fml_vfile_path + "/.mc-server-manager/data";
+        datadir = home_dir().expect("Could not get HomeDir").display().to_string() + "/.mc-server-manager/data";
     }
 
     if is_neoforge == true {
@@ -1987,6 +2000,23 @@ fn check_fml_vfile_updates(is_neoforge: bool) {
         fml_dl_path = "https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/data/neofml_versions.toml".to_string();
     } else {
         fml_dl_path = "https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/data/fml_versions.toml".to_string();
+    }
+
+    match fs::metadata(&fml_vfile_path) {
+            Ok(_) => {
+                // do nothing
+            }
+            Err(_) => {
+                match fs::metadata(&datadir) {
+                    Ok(_) => {
+                        // do nothing
+                    }
+                    Err(_) => {
+                        fs::create_dir(&datadir).expect("Could not create directory");
+                    }
+                }
+            fml_vfile_donwload(is_neoforge, fml_vfile_path.clone());
+        }
     }
 
     let fml_vfile_content = fs::read_to_string(&fml_vfile_path)
@@ -2102,4 +2132,53 @@ fn dl_mcsvdl(mcsvdl_tar: PathBuf, dotpath: PathBuf) {
             fs::remove_file(mcsvdl_tar).expect("Failed to remove Archive");
             fs::remove_file(dotpath.join("LICENSE")).expect("Failed to remove File");            
                 }
+}
+
+fn stop_server(pid_raw: String) {
+
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str_raw = String::from_utf8_lossy(&jps.stdout).trim().to_string();
+
+    let jps_str: String = jps_str_raw
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect();
+
+    let pid = pid_raw.trim();  
+
+    if jps_str.contains(&pid) {
+    #[cfg(windows)] {
+
+    let output = Command::new("taskkill")
+        .args(&["/PID", &pid, "/F"])
+        .output()
+        .expect("Failed to execute taskkill command");
+
+    if output.status.success() {
+        println!("Server stopped successfully.");
+        return;
+    } else {
+        eprintln!("Failed to stop server.");
+    }
+    }
+
+    #[cfg(unix)] {
+
+    let output = Command::new("kill")
+        .arg(&pid)
+        .output()
+        .expect("Failed to execute taskkill command");
+
+    if output.status.success() {
+        println!("Server stopped successfully.");
+        return;
+    } else {
+        eprintln!("Failed to stop server.");
+    }
+    }
+    
+    } else {
+        println!("PID {} doenst exist or is not a running Server!", pid_raw);
+        println!("Consider running | jps -l | to get all active Java processes.");
+    }
 }
