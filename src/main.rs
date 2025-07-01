@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
+use std::thread::panicking;
 use indexmap::IndexMap;
 use std::env::{self};
 use std::io::{self, Read, Write};
@@ -283,18 +284,11 @@ fn main() {
                 println!("For more information, please visit https://www.minecraft.net/en-us/eula.");
                 println!();
             }
-            "dev" =>{
-                io::stdout().flush().expect("Failed to flush stdout");
-
-                let mut eee = String::new();
-                 io::stdin()
-                .read_line(&mut eee)
-                .expect("Failed to read path");
-                println!("{}", eee);
-                stop_server(eee);
-            }
             "list" => {
                 list_servers();
+            }
+            "stop" => {
+                stop_server_wrapper();
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
@@ -1707,7 +1701,6 @@ fn list_servers(){
         .expect("Could not parse TOML");
 
     let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
-    let server_names: Vec<&String> = server_list_map.keys().collect();
 
     let mut curr_server_count = 0;
 
@@ -2116,7 +2109,7 @@ fn stop_server(pid_raw: String) {
     
     } else {
         println!("PID {} doenst exist or is not a running Server!", pid_raw);
-        println!("Consider running | jps -l | to get all active Java processes.");
+        println!("Consider running | jps -l | to get a list of active Java processes.");
     }
 }
 
@@ -2188,4 +2181,178 @@ fn dl_server(mcsvdl_path: PathBuf, version: String, modloader: String, dir_path:
         .expect("Failed to download File");
         }
 
+}
+
+fn stop_server_wrapper() {
+
+    let (active_server_count, active_server_names_vec) = get_active_servers();
+    let active_server_names = active_server_names_vec.join(" ");
+
+    if active_server_count == 0 {
+        println!("No Servers are currently running!");
+        println!("Please Start a Server via the start action first.");
+        return;
+    } else if active_server_count <= 0 {
+        println!("Something went wrong when getting all Servers. Please run the list action to get more information.");
+        return;
+    }
+
+    println!("Active Servers: {}", active_server_count);
+    println!();
+    print_active_servers();
+    println!();
+    println!("What server do you want to stop?");
+    println!("Please enter the Server number.");
+    println!("Type abort to exit.");
+
+    loop {
+    print!("-> ");
+    io::stdout().flush().unwrap();
+    let mut input = String::new();
+        io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read path");
+    if input.contains("abort") {
+        return;
+    }
+    input = "server".to_string() + &input.trim();
+
+    if active_server_names.contains(&input) {
+        let cfg_app_str = read_cfg_silent();
+        let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+            .expect("Could not parse TOML");
+
+        let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
+
+        let server_toml_path = server_list_map.get(&input).expect("Could not get Path to the Server Config File");
+        let cfg_server_str =
+            fs::read_to_string(server_toml_path).expect("Could not read server config file");
+        let mut cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+        let pid = cfg_server_toml.server_config.pid;
+
+        println!("Stopping {}...", input);
+
+        stop_server(pid);
+
+        cfg_server_toml.server_config.pid = "".to_string();
+        cfg_server_toml.server_config.running = false;
+
+        write_server_toml(&cfg_server_toml, &server_toml_path);
+
+        return;
+
+    } else {
+        println!("No active Server found!");
+    }
+}
+}
+
+fn print_active_servers(){
+
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+    let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
+
+    let mut curr_server_count = 0;
+
+    let max_server_count = cfg_app_data.system.servers;
+
+    if curr_server_count == max_server_count {
+        println!("No Servers found!");
+        println!("Please add / download a Server.");
+        return;
+    } else if curr_server_count >= max_server_count {
+        println!("You have a broken config file!");
+        println!("Regenerate the config with newcfg.");
+        return;
+    }
+    while curr_server_count != max_server_count {
+
+        curr_server_count = curr_server_count + 1;
+
+        let server_name = String::from("server".to_string() + &curr_server_count.to_string());
+
+        let server_toml_path = server_list_map.get(&server_name).expect("Could not get Path to server.toml");
+
+        let cfg_server_str =
+            fs::read_to_string(server_toml_path).expect("Could not read server config file");
+        let cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+        let mut is_running = false;
+
+        if cfg_server_toml.server_config.pid == "" {
+            is_running = false;
+        } else if jps_str.contains(&cfg_server_toml.server_config.pid) {
+            is_running = true;
+        }
+        if is_running == true {
+        println!("{}", server_name);
+        println!("Name: {}, Version: {}, Modloader: {},  PID: {}, Has Port: {}", cfg_server_toml.server_config.name, cfg_server_toml.server_config.version, cfg_server_toml.server_config.modloader, cfg_server_toml.server_config.pid ,cfg_server_toml.server_config.port);
+        }
+        
+
+    }
+}
+
+fn get_active_servers() -> (i32, Vec<String>) {
+
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+    let cfg_app_str = read_cfg_silent();
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
+        .expect("Could not parse TOML");
+
+    let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
+
+    let mut curr_server_count = 0;
+
+    let max_server_count = cfg_app_data.system.servers;
+
+    let mut server_names = Vec::new();
+
+    if curr_server_count == max_server_count {
+        println!("No Servers found!");
+        println!("Please add / download a Server.");
+        return (-1, server_names);
+    } else if curr_server_count >= max_server_count {
+        println!("You have a broken config file!");
+        println!("Regenerate the config with newcfg.");
+        return (-1, server_names);
+    }
+    
+    let mut has_printed = 0;
+    while curr_server_count != max_server_count {
+
+        curr_server_count = curr_server_count + 1;
+
+        let server_name = String::from("server".to_string() + &curr_server_count.to_string());
+
+        let server_toml_path = server_list_map.get(&server_name).expect("Could not get Path to server.toml");
+
+        let cfg_server_str =
+            fs::read_to_string(server_toml_path).expect("Could not read server config file");
+        let cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+        let mut is_running = false;
+
+        if cfg_server_toml.server_config.pid == "" {
+            is_running = false;
+        } else if jps_str.contains(&cfg_server_toml.server_config.pid) {
+            is_running = true;
+            server_names.push(cfg_server_toml.server_config.name);
+        }
+        if is_running == true {
+        has_printed = has_printed + 1;
+        }
+
+    }
+    return (has_printed, server_names);
 }
