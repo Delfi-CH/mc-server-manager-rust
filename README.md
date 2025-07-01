@@ -199,17 +199,20 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 ### Modloaders
 
 - Forge:
-  - Minecraft 1.7.10 - 1.21.6
+  - Forge is a open-source Minecraft Modding API and Modloader. It has existed for a long time and is compatible with most Minecraft versions. 
+  - Supports: Minecraft 1.7.10 - 1.21.6
 - NeoForge:
-  - Minecraft 1.20.2 - 1.21.6
+  - NeoForge is a fork of Forge, developed by most of the Team behind Forge. It aims for better features for Mod-Developers and only supports newer Versions of Minecraft.
+  - Supports: Minecraft 1.20.2 - 1.21.6
 - Fabric
-  - Minecraft 1.14.4 - 1.21.6
-- Quilt
-  - Minecraft 1.18.2 - 1.21.6
+  - Fabric is a open-source Modloader. It is more lightweight and modular than Forge and supports many more recent versions of the Game.
+  - Supports: Minecraft 1.14.4 - 1.21.6
 - PaperMC
-  - Minecraft 1.9.4 - 1.21.5
+  - Paper is a modified Server-Software which aims to improve Performance and introduces a Plugin API. It is compatible with most Versions of the game and doesnt require a modified Client.
+  - Supports: Minecraft 1.9.4 - 1.21.5
 - Folia
-  - Minecraft 1.19.4 - 1.21.6
+  - Folia is a fork of Paper, developed by mostly the same Team behind Paper, which adds Multithreading for improved Performance.
+  - Supports: Minecraft 1.19.4 - 1.21.6
 
 Note that Versions labled "April Fools" cannot be run with any modloaders.
 ## Configuration
