@@ -167,14 +167,14 @@ fn main() {
     println!("Welcome to the CLI MC-Server Management");
     println!("What would you like to do?");
     println!();
-    println!("Actions: ");
-    println!("abort: Exits the Application");
+	println!("Actions: ");
+	println!("abort: Exits the Application");
     println!("about: Shows Information about the Application");
-    println!("add: Adds a Server via a TOML File");
-    println!("check: Checks if Java is installed on the System");
+	println!("add: Adds a Server via a TOML File");
+	println!("check: Checks if Java is installed on the System");
 	println!("exit: Exits the Application");
 	println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
-	println!("install: Download and install a server.jar from the Internet");
+	println!("install: Download and install a Server from the Internet");
 	println!("help: Lists all Actions");
     println!("license: Shows all Information about licensing.");
     println!("list: Shows all active Servers");
@@ -183,6 +183,7 @@ fn main() {
 	println!("source: Opens the projects Git Repository in your default Browser");
 	println!("start: Start a Server");
 	println!("startjar: Start a Server from a .jar file");
+    println!("stop: Stops a Sever started via the start action.");
 
     loop {
         print!("> ");
@@ -247,6 +248,7 @@ fn main() {
 				println!("source: Opens the projects Git Repository in your default Browser");
 				println!("start: Start a Server");
 				println!("startjar: Start a Server from a .jar file");
+                println!("stop: Stops a Sever started via the start action.");
             }
             "start" => {
                 start_toml();
