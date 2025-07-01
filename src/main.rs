@@ -1543,8 +1543,8 @@ fn download_server() {
             #[cfg(unix)] {
             path_windows_dir = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
             path_windows_jar = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
-            path_unix_dir = dir_path;
-            path_unix_jar = dir_path + "/fabric-server-launch.jar";
+            path_unix_dir = &dir_path;
+            path_unix_jar = &dir_path + "/fabric-server-launch.jar";
             }
 
         } else if modloader.contains("forge"){
@@ -1557,8 +1557,8 @@ fn download_server() {
             #[cfg(unix)] {
             path_windows_dir = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
             path_windows_jar = "File was downloaded on Unix or a Unix-like OS (probably Linux). Please add the path manually".to_string();
-            path_unix_dir = dir_path;
-            path_unix_jar = dir_path + "/run.sh";
+            path_unix_dir = &dir_path;
+            path_unix_jar = &dir_path + "/run.sh";
             }
 
         } else {
