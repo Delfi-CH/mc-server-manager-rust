@@ -1,6 +1,6 @@
 [package]
 name = "mc_server_panel"
-version = "0.0.7"
+version = "0.0.8"
 edition = "2024"
 readme = "README.md"
 homepage = "https://github.com/Delfi-CH/mc-server-manager-rust"
