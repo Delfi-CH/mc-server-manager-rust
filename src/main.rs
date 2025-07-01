@@ -1454,71 +1454,8 @@ fn download_server() {
         }
         check_mcsvdl(dotpath, mcsvdl_tar);
         println!("Downloading Server.jar for {} {} to {} ...", modloader_display, version_display ,download_path);
-        let mut fml_version= String::new();
-        if modloader == "forge" {
-            fml_version = fml_versions_str(version.clone(), false);
-
-            println!("Downloading Forge installer...");
-            Command::new(&mcsvdl_path)
-            .args(&["-v", &version, "-m", &modloader, "-fv", &fml_version ])
-            .current_dir(&dir_path)
-            .output()
-            .expect("Failed to download File");
-
-            println!("Executing Installer...");
-            Command::new("java")
-            .args(&["-jar", "installer.jar", "--installServer"])
-            .current_dir(&dir_path)
-            .output()
-            .expect("Could not apply the fabric installer!");
-
-        } else if modloader == "neoforge" {
-            fml_version = fml_versions_str(version.clone(), true);
-
-            println!("Downloading NeoForge installer...");
-            Command::new(&mcsvdl_path)
-            .args(&["-v", &version, "-m", &modloader , "-nfv", &fml_version])
-            .current_dir(&dir_path)
-            .output()
-            .expect("Failed to download File");
-
-            println!("Executing Installer...");
-            Command::new("java")
-            .args(&["-jar", "installer.jar", "--install-server"])
-            .current_dir(&dir_path)
-            .output()
-            .expect("Could not apply the fabric installer!");
-
-        } else if modloader == "fabric" {
-
-        println!("Downloading Fabric installer...");
-        Command::new(&mcsvdl_path)
-        .args(&["-v", &version, "-m", &modloader ])
-        .current_dir(&dir_path)
-        .output()
-        .expect("Failed to download File");
-
-        println!("Downloading Server.jar...");
-        Command::new(&mcsvdl_path)
-        .args(&["-v", &version, "-m", "vanilla" ])
-        .current_dir(&dir_path)
-        .output()
-        .expect("Failed to download File");
-
-        println!("Executing Installer...");
-        Command::new("java")
-        .args(&["-jar", "installer.jar", "server", &version])
-        .current_dir(&dir_path)
-        .output()
-        .expect("Could not apply the fabric installer!");
-
-        } else {
-        Command::new(&mcsvdl_path)
-        .args(&["-v", &version, "-m", &modloader ])
-        .current_dir(&dir_path)
-        .output()
-        .expect("Failed to download File");
-        }
+        
+        dl_server(mcsvdl_path, version.clone(), modloader.clone(), dir_path.clone());
 
         let mut eulapath = String::new();
         #[cfg(windows)] {
@@ -2181,4 +2118,74 @@ fn stop_server(pid_raw: String) {
         println!("PID {} doenst exist or is not a running Server!", pid_raw);
         println!("Consider running | jps -l | to get all active Java processes.");
     }
+}
+
+fn dl_server(mcsvdl_path: PathBuf, version: String, modloader: String, dir_path: String) {
+
+    let mut fml_version= String::new();
+        if modloader == "forge" {
+            fml_version = fml_versions_str(version.clone(), false);
+
+            println!("Downloading Forge installer...");
+            Command::new(&mcsvdl_path)
+            .args(&["-v", &version, "-m", &modloader, "-fv", &fml_version ])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Failed to download File");
+
+            println!("Executing Installer...");
+            Command::new("java")
+            .args(&["-jar", "installer.jar", "--installServer"])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Could not apply the fabric installer!");
+
+        } else if modloader == "neoforge" {
+            fml_version = fml_versions_str(version.clone(), true);
+
+            println!("Downloading NeoForge installer...");
+            Command::new(&mcsvdl_path)
+            .args(&["-v", &version, "-m", &modloader , "-nfv", &fml_version])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Failed to download File");
+
+            println!("Executing Installer...");
+            Command::new("java")
+            .args(&["-jar", "installer.jar", "--install-server"])
+            .current_dir(&dir_path)
+            .output()
+            .expect("Could not apply the fabric installer!");
+
+        } else if modloader == "fabric" {
+
+        println!("Downloading Fabric installer...");
+        Command::new(&mcsvdl_path)
+        .args(&["-v", &version, "-m", &modloader ])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Failed to download File");
+
+        println!("Downloading Server.jar...");
+        Command::new(&mcsvdl_path)
+        .args(&["-v", &version, "-m", "vanilla" ])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Failed to download File");
+
+        println!("Executing Installer...");
+        Command::new("java")
+        .args(&["-jar", "installer.jar", "server", &version])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Could not apply the fabric installer!");
+
+        } else {
+        Command::new(&mcsvdl_path)
+        .args(&["-v", &version, "-m", &modloader ])
+        .current_dir(&dir_path)
+        .output()
+        .expect("Failed to download File");
+        }
+
 }
