@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
+use indexmap::IndexMap;
 use std::env::{self};
 use std::io::{self, Read, Write};
 use std::fs::{self, File};
@@ -112,16 +113,17 @@ impl Default for Storage {
 #[derive(Serialize, Deserialize, Debug)]
 struct Servers {
     #[serde(default)]
-    server_list: HashMap<String, String>,
+    server_list: IndexMap<String, String>,
 }
 
 impl Default for Servers {
     fn default() -> Self {
         Servers {
-            server_list: HashMap::new(),
+            server_list: IndexMap::new(),
         }
     }
 }
+
 
 
 // Structs for a server config file
@@ -265,7 +267,7 @@ fn main() {
                 if let Err(e) = open::that("https://www.youtube.com/watch?v=dQw4w9WgXcQ") {
                 eprintln!("Failed to open browser: {}", e);
                 }
-                exit(69)
+                exit(69);
             }
             "source" => {
                 if let Err(e) = open::that("https://github.com/Delfi-CH/mc-server-management/tree/main") {
@@ -311,88 +313,10 @@ fn add_server() {
         if path.to_lowercase() == "abort" {
             break;
         }
-        let full_path = win_path_cleaner_path(mk_path_absolute(path));
 
-        println!("{}", full_path.display());
-
-        let filetype = Path::new(&full_path).extension().and_then(|ext| ext.to_str());
-
-        if filetype == Some("toml") {
-            match fs::read_to_string(&full_path) {
-                Ok(contents_string) => {
-                    println!("File is a toml file");
-
-                    if !contents_string.contains("[server_config]") {
-                        println!("File is not a valid Server configuration file!");
-                        println!("Try again");
-                        continue;
-                    }
-
-                    let cfg_data_str = read_cfg_silent();
-                    let mut cfg_data_toml: Config = match toml::from_str(&cfg_data_str) {
-                        Ok(cfg) => cfg,
-                        Err(e) => {
-                            eprintln!("Could not parse config.toml: {}", e);
-                            continue;
-                        }
-                    };
-
-                    let server_toml_str = match fs::read_to_string(&full_path) {
-                        Ok(s) => s,
-                        Err(e) => {
-                            eprintln!("Failed to read server config file: {}", e);
-                            continue;
-                        }
-                    };
-
-                    let server_toml_toml: ServerConfigFile = match toml::from_str(&server_toml_str) {
-                        Ok(srv) => srv,
-                        Err(e) => {
-                            eprintln!("Could not parse server config TOML: {}", e);
-                            continue;
-                        }
-                    };
-
-                    let is_windows = cfg_data_toml.system.os_mini == "win";
-
-                    let jar_path = if is_windows {
-                        &server_toml_toml.server_config.path_windows_jar
-                    } else {
-                        &server_toml_toml.server_config.path_unix_jar
-                    };
-
-                    if let Err(_) = fs::metadata(jar_path) {
-                        println!("No server.jar found at the specified path: {}", jar_path);
-                        continue;
-                    }
-
-                    let mut server_list = cfg_data_toml.server_list.server_list.clone();
-
-                    let mut server_count = cfg_data_toml.system.servers;
-                    server_count += 1;
-
-                    let key = format!("server{}", server_count);
-                    let path_str = full_path.display().to_string();
-                    let clean_path = path_str.strip_prefix(r"\\?\").unwrap_or(&path_str);
-                    server_list.insert(key, clean_path.to_string());
-
-                    cfg_data_toml.system.servers = server_count;
-                    cfg_data_toml.server_list.server_list = server_list;
-
-                    write_cfg(&cfg_data_toml, "config.toml");
-                    println!("Server added successfully.");
-
-                    break;
-                }
-                Err(e) => {
-                    println!("Failed to read file: {}", e);
-                    continue;
-                }
-            }
-        } else {
-            println!("File is not TOML! Please enter a path to a TOML file.");
-        }
-    }
+        add_server_silent(path);
+       
+}
 }
 
 fn add_server_silent(path: &str) {
@@ -1156,7 +1080,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
                     .expect("Failed to start Java process"),
             );
 
-            thread::sleep(Duration::from_secs(30));
+            thread::sleep(Duration::from_secs(5));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
             let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
@@ -1192,7 +1116,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
 
         server = Some(spawn_server.spawn().expect("Failed to spawn detached Java process"));
         }
-            thread::sleep(Duration::from_secs(30));
+            thread::sleep(Duration::from_secs(5));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
             let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
@@ -1219,7 +1143,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
                     .expect("Failed to spawn Server via run.bat"),
             );
 
-            thread::sleep(Duration::from_secs(30));
+            thread::sleep(Duration::from_secs(20));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
             let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
@@ -1254,7 +1178,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
 
         server = Some(spawn_server.spawn().expect("Failed to spawn Server via run.sh"));
         }
-            thread::sleep(Duration::from_secs(30));
+            thread::sleep(Duration::from_secs(20));
 
             let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
             let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
@@ -1353,7 +1277,6 @@ fn download_server() {
         version_display = version.trim().to_string();
         version = version.trim().to_lowercase();
 
-        //needs more work
         if version.contains("1.7.10") {
             break;
         } else if version.contains("abort") {
@@ -1431,7 +1354,7 @@ fn download_server() {
 
 
         println!("What Modloader would you like to use?");
-        println!("Supported Modloaders are: Vanilla, Forge, Neoforge, Fabric and Paper.");
+        println!("Supported Modloaders are: Vanilla, Forge, Neoforge, Fabric, Paper and Folia.");
         println!("Note that not all Minecraft Versions are supported by every Modloader.");
         println!("For more info look here:");
         println!("https://github.com/Delfi-CH/mc-server-manager-rust?tab=readme-ov-file#modloaders");
@@ -1669,7 +1592,7 @@ fn start_toml() {
         return;
     }
 
-    let server_list_map: &HashMap<String, String> = &cfg_app_data.server_list.server_list;
+    let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
     let server_names: Vec<&String> = server_list_map.keys().collect();
 
     println!("List of servers:\n");
@@ -1828,15 +1751,50 @@ fn mk_path_absolute(input_path: &str) -> PathBuf {
 }
 fn list_servers(){
 
-    // needs lots of work
-
     let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
     let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
     let cfg_app_str = read_cfg_silent();
-    let _cfg_app_data: Config = toml::from_str(&cfg_app_str)
+    let cfg_app_data: Config = toml::from_str(&cfg_app_str)
         .expect("Could not parse TOML");
 
+    let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
+    let server_names: Vec<&String> = server_list_map.keys().collect();
+
+    let mut curr_server_count = 0;
+
+    let max_server_count = cfg_app_data.system.servers;
+
+    if curr_server_count == max_server_count {
+        println!("No Servers found!");
+        println!("Please add / download a Server.");
+        return;
+    } else if curr_server_count >= max_server_count {
+        println!("You have a broken config file!");
+        println!("Regenerate the config with newcfg.");
+        return;
+    }
+    while curr_server_count != max_server_count {
+
+        curr_server_count = curr_server_count + 1;
+
+        let server_name = String::from("server".to_string() + &curr_server_count.to_string());
+
+        let server_toml_path = server_list_map.get(&server_name).expect("Could not get Path to server.toml");
+
+        let cfg_server_str =
+            fs::read_to_string(server_toml_path).expect("Could not read server config file");
+        let cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+        println!("{}", server_name);
+        println!("{}", cfg_server_toml.server_config.pid);
+        
+
+    }
+
+    if jps_str.contains("") {
     println!("{}", jps_str);
+    }
 }
 
 fn create_server_toml(

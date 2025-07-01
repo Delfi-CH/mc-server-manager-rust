@@ -235,6 +235,7 @@ checksum = "fe4cd85333e22411419a0bcae1297d25e58c9443848b11dc6a86fefe8c78a661"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.4",
+ "serde",
 ]
 
 [[package]]
@@ -322,6 +323,7 @@ name = "mc_server_panel"
 version = "0.0.7"
 dependencies = [
  "dir",
+ "indexmap",
  "libc",
  "open",
  "os_info",
