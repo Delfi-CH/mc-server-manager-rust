@@ -1531,6 +1531,8 @@ fn download_server() {
         let mut path_unix_dir = String::new();
         let mut path_unix_jar = String::new();
 
+        let portnum = PORT_DEFAULT + cfg_app_data.system.servers;
+
         if modloader == "fabric" {
             #[cfg(windows)] {
                 path_windows_dir = win_path_cleaner(&dir_path).to_string();
@@ -1575,7 +1577,7 @@ fn download_server() {
         }
         }
         println!("Creating .toml File for the server...");
-        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), version, modloader, path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, agree_eula ,PORT_DEFAULT);
+        create_server_toml(toml_path.clone(), "server".to_string() + &new_server_id.to_string(), version, modloader, path_windows_dir, path_unix_dir, path_windows_jar, path_unix_jar, MIN_MEM_DEFAULT, MAX_MEM_DEFAULT, agree_eula ,portnum);
         println!("Adding .toml file to the configuration...");
         add_server_silent(toml_path.as_str());
         println!("Finished!");
@@ -1786,14 +1788,29 @@ fn list_servers(){
         let cfg_server_toml: ServerConfigFile =
             toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
 
+        let mut f_running = String::new();
+
+        let mut is_running = false;
+
+        if cfg_server_toml.server_config.pid == "" {
+            is_running = false;
+        } else if jps_str.contains(&cfg_server_toml.server_config.pid) {
+            is_running = true;
+        }
+
+        if is_running == true {
+            f_running = "Yes".to_string();
+        } else {
+            f_running = "No".to_string();
+        }
+
         println!("{}", server_name);
-        println!("{}", cfg_server_toml.server_config.pid);
-        
+        if is_running == true {
+        println!("Name: {}, Version: {}, Modloader: {}, Currently running?: {}, with PID: {}, Has Port: {}", cfg_server_toml.server_config.name, cfg_server_toml.server_config.version, cfg_server_toml.server_config.modloader, f_running, cfg_server_toml.server_config.pid ,cfg_server_toml.server_config.port);
+        } else {
+        println!("Name: {}, Version: {}, Modloader: {}, Currently running?: {}, Has Port: {}", cfg_server_toml.server_config.name, cfg_server_toml.server_config.version, cfg_server_toml.server_config.modloader, f_running, cfg_server_toml.server_config.port);
+        }
 
-    }
-
-    if jps_str.contains("") {
-    println!("{}", jps_str);
     }
 }
 
