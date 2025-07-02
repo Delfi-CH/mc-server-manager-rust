@@ -63,9 +63,9 @@ Supported Java Runtimes:
 ### Windows
 
 #### Downloading and Installing Java
-- Visit the official JDK 24 website: [https://jdk.java.net/24/](https://jdk.java.net/24/)
+- Visit the official JDK website: [https://jdk.java.net/](https://jdk.java.net/)
 - Download the ZIP archive for Windows.
-- Unzip the downloaded archive to a safe and convenient location on your computer (eg: `C:\Java\jdk-24`).
+- Unzip the downloaded archive to a safe and convenient location on your computer (eg: `C:\Java\jdk?`).
 - Locate the `java.exe` file inside the extracted folder (typically in the `bin` directory).
 - Copy the full path to the `bin` folder.
 - Add this path to your system's **PATH** environment variable:
