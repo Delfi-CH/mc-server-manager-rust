@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
-use std::thread::panicking;
 use indexmap::IndexMap;
 use std::env::{self};
 use std::io::{self, Read, Write};
@@ -13,6 +12,7 @@ use dir::{home_dir};
 use std::process::exit;
 use std::{thread, time::Duration};
 use std::process::Child;
+use props_rs::*;
 #[cfg(unix)]
 use libc;
 #[cfg(unix)]
@@ -174,6 +174,7 @@ fn main() {
 	println!("check: Checks if Java is installed on the System");
 	println!("exit: Exits the Application");
 	println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
+    println!("info: Get info about a server.");
 	println!("install: Download and install a Server from the Internet");
 	println!("help: Lists all Actions");
     println!("license: Shows all Information about licensing.");
@@ -238,6 +239,7 @@ fn main() {
 				println!("add: Adds a Server via a TOML File");
 				println!("check: Checks if Java is installed on the System");
 				println!("exit: Exits the Application");
+                println!("info: Get info about a server.");
 				println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
 				println!("install: Download and install a Server from the Internet");
 				println!("help: Lists all Actions");
@@ -288,6 +290,9 @@ fn main() {
             }
             "list" => {
                 list_servers();
+            }
+            "info" => {
+                read_properties();
             }
             "stop" => {
                 stop_server_wrapper();
@@ -2357,4 +2362,53 @@ fn get_active_servers() -> (i32, Vec<String>) {
 
     }
     return (has_printed, server_names);
+}
+
+fn read_properties_hashmap(path: String) -> HashMap<String, String> {
+
+    let prop_str = match fs::read(path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to read server config file: {}", e);
+            let mut hash_err: HashMap<String, String> = HashMap::new();
+            hash_err.insert("100".to_string(), "Error".to_string());
+            return hash_err;
+            
+        }
+    };
+    
+                
+    let parsed = parse(&prop_str).unwrap();
+    let properties = to_map(parsed);
+
+    return properties;
+}
+
+fn read_properties() {
+    let path = "C:\\Users\\laspi\\.mc-server-manager\\servers\\server1\\server.properties".to_string();
+
+    let props = read_properties_hashmap(path);
+
+    if props.get("100").expect("E").contains("Error") {
+        println!("An Error occured while reading server.properties!");
+    }
+
+    println!("allow-flight={}", props.get("allow-flight").expect("E"));
+    println!("allow-nether={}", props.get("allow-nether").expect("E"));
+    println!("difficulty={}", props.get("difficulty").expect("E"));
+    println!("enable-command-block={}", props.get("enable-command-block").expect("E"));
+    println!("white-list={}", props.get("white-list").expect("E"));
+    println!("enforce-whitelist={}", props.get("enforce-whitelist").expect("E"));
+    println!("force-gamemode={}", props.get("force-gamemode").expect("E"));
+    println!("gamemode={}", props.get("gamemode").expect("E"));
+    println!("generate-structures={}", props.get("generate-structures").expect("E"));
+    println!("hardcore={}", props.get("hardcore").expect("E"));
+    println!("level-seed={}", props.get("level-seed").expect("E"));
+    println!("max-players={}", props.get("max-players").expect("E"));
+    println!("motd={}", props.get("motd").expect("E"));
+    println!("pvp={}", props.get("pvp").expect("E"));
+    println!("view-distance={}", props.get("view-distance").expect("E"));
+    println!("simulation-distance={}", props.get("simulation-distance").expect("E"));
+    println!("spawn-monsters={}", props.get("spawn-monsters").expect("E"));
+    println!("spawn-protection={}", props.get("spawn-protection").expect("E"));
 }
