@@ -2479,3 +2479,13 @@ fn read_properties() {
     println!("spawn-monsters={}", props.get("spawn-monsters").expect("E"));
     println!("spawn-protection={}", props.get("spawn-protection").expect("E"));
 }
+
+fn remove_server(server_toml_path: String) -> bool {
+
+    // needs lots of work
+    let cfg_server_str =
+            fs::read_to_string(server_toml_path).expect("Could not read server config file");
+    let cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+    return false;
+}
