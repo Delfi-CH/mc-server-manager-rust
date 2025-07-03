@@ -163,6 +163,7 @@ type FmlVersionsFile = HashMap<String, String>;
 fn main() {
 
     init_silent();
+    get_active_servers();
 
     println!("Welcome to the CLI MC-Server Management");
     println!("What would you like to do?");
@@ -1481,6 +1482,29 @@ fn download_server() {
 
         let portnum = PORT_DEFAULT + cfg_app_data.system.servers;
 
+        println!("Creating default server.properties...");
+
+        let mut props_path = String::new();
+        #[cfg(windows)] {
+            props_path = win_path_cleaner(&dir_path).to_string() + "\\server.properties";
+        }
+        #[cfg(unix)] {
+            props_path = &dir_path.to_string() + "/server.properties";
+        }
+
+        println!("{}", props_path);
+
+        Command::new("curl")
+            .args([
+                "-L",
+                "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/server.properties",
+                "-o",
+                &props_path,
+            ])
+            .output()
+            .expect("Failed to download File");
+
+
         if modloader == "fabric" {
             #[cfg(windows)] {
                 path_windows_dir = win_path_cleaner(&dir_path).to_string();
@@ -1542,20 +1566,37 @@ fn start_toml() {
         return;
     }
 
-    let server_list_map: &IndexMap<String, String> = &cfg_app_data.server_list.server_list;
-    let server_names: Vec<&String> = server_list_map.keys().collect();
+    let server_list_map: IndexMap<String, String> = cfg_app_data.server_list.server_list;
 
-    println!("List of servers:\n");
-    for (i, server_name) in server_names.iter().enumerate() {
-        println!("{} => {}", i + 1, server_name);
+    let mut server_names = Vec::new();
+
+    println!("Available Servers:");
+    println!(); 
+    let mut i = 1;
+
+    for (key, path) in server_list_map.iter() {
+        let cfg_server_str =
+            fs::read_to_string(path).expect("Could not read server config file");
+        let cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+        let server_num = key.strip_prefix("server").expect("Could not remove server from key.");
+
+        if !cfg_server_toml.server_config.running {
+            server_names.push(server_num.to_string());
+            println!("{}=>{}",i, key);
+            i += 1;
+        }
     }
+
+    
 
     println!("\nWhat server do you want to start?");
     println!("Please enter a number.");
     println!("Or type 'abort' to exit.");
 
     let mut input = String::new();
-    let selected_server_name: &String;
+    let selected_server_name: String;
 
     loop {
         print!("-> ");
@@ -1572,7 +1613,7 @@ fn start_toml() {
 
         if let Ok(index) = trimmed.parse::<usize>() {
             if index >= 1 && index <= server_names.len() {
-                selected_server_name = server_names[index - 1];
+                selected_server_name = "server".to_owned() + &server_names[index-1];
                 break;
             } else {
                 println!("Invalid number, please select from the list.");
@@ -1584,7 +1625,7 @@ fn start_toml() {
 
     println!("Selected {}", selected_server_name);
 
-    if let Some(server_toml_path) = server_list_map.get(selected_server_name) {
+    if let Some(server_toml_path) = server_list_map.get(&selected_server_name) {
         println!("{}", server_toml_path);
 
         let cfg_server_str =
@@ -1612,7 +1653,16 @@ fn start_toml() {
         #[cfg(unix)] {
         eula_path = format!("{}/eula.txt", path_dir_str);
         }
+        let mut props_path = String::new();
+        #[cfg(windows)] {
+        props_path = format!("{}\\server.properties", path_dir_str);
+        }
+        #[cfg(unix)] {
+        props_path = format!("{}/server.properties", path_dir_str);
+        }
 
+        let props_map = read_properties_hashmap(props_path);
+        println!("{}", props_map.get("server-port").expect("Failed to read Server Props"));
         if let Ok(contents) = fs::read_to_string(&eula_path) {
             if contents.contains("eula = true") {
                 agree_eula = true;
@@ -2345,7 +2395,7 @@ fn get_active_servers() -> (i32, Vec<String>) {
 
         let cfg_server_str =
             fs::read_to_string(server_toml_path).expect("Could not read server config file");
-        let cfg_server_toml: ServerConfigFile =
+        let mut cfg_server_toml: ServerConfigFile =
             toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
 
         let mut is_running = false;
@@ -2355,6 +2405,11 @@ fn get_active_servers() -> (i32, Vec<String>) {
         } else if jps_str.contains(&cfg_server_toml.server_config.pid) {
             is_running = true;
             server_names.push(cfg_server_toml.server_config.name);
+        } else if !jps_str.contains(&cfg_server_toml.server_config.pid) {
+            is_running = false;
+            cfg_server_toml.server_config.pid = "".to_string();
+            cfg_server_toml.server_config.running = false;
+            write_server_toml(&cfg_server_toml, &server_toml_path);
         }
         if is_running == true {
         has_printed = has_printed + 1;
@@ -2385,13 +2440,25 @@ fn read_properties_hashmap(path: String) -> HashMap<String, String> {
 }
 
 fn read_properties() {
-    let path = "C:\\Users\\laspi\\.mc-server-manager\\servers\\server1\\server.properties".to_string();
+    let path = "C:\\Users\\laspi\\.mc-server-manager\\servers\\server1\\server.properties";
 
-    let props = read_properties_hashmap(path);
+    let props = read_properties_hashmap(path.to_string());
 
-    if props.get("100").expect("E").contains("Error") {
-        println!("An Error occured while reading server.properties!");
+    if props.get("100").map_or(false, |v| v.contains("Error")) {
+        println!("An Error occurred while reading server.properties!");
     }
+
+    let cfg_server_str =
+            fs::read_to_string("C:\\Users\\laspi\\.mc-server-manager\\servers\\server1.toml").expect("Could not read server config file");
+    let cfg_server_toml: ServerConfigFile =
+            toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
+
+    println!("server-name={}",cfg_server_toml.server_config.name);
+    println!("mc-version={}",cfg_server_toml.server_config.version);
+    println!("modloader={}",cfg_server_toml.server_config.modloader);
+    println!("is-running={}", cfg_server_toml.server_config.running);
+
+    println!("{}", path);
 
     println!("allow-flight={}", props.get("allow-flight").expect("E"));
     println!("allow-nether={}", props.get("allow-nether").expect("E"));
