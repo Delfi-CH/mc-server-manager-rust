@@ -2504,12 +2504,32 @@ fn read_properties() {
     println!("spawn-protection={}", props.get("spawn-protection").expect("E"));
 }
 
-fn remove_server(server_toml_path: String) -> bool {
+fn remove_server(server_toml_path: String) -> (i32, bool) {
 
-    // needs lots of work
+    // needs implenting
     let cfg_server_str =
             fs::read_to_string(server_toml_path).expect("Could not read server config file");
     let cfg_server_toml: ServerConfigFile =
             toml::from_str(&cfg_server_str).expect("Could not parse server TOML");
-    return false;
+    
+    if cfg_server_toml.server_config.running == true {
+        return(2, false);
+    } else if  cfg_server_toml.server_config.running == false{
+        let cfg_app_str = read_cfg_silent();
+        let mut cfg_app_data: Config = toml::from_str(&cfg_app_str).expect("Could not parse TOML");
+
+        fs::remove_file(cfg_app_data.server_list.server_list.get(&cfg_server_toml.server_config.name).expect("Could not get Path")).expect("Could not remove Server Directory");
+        
+        cfg_app_data.server_list.server_list.swap_remove(&cfg_server_toml.server_config.name).expect("Could not delete Entry");
+
+        #[cfg(windows)]{
+        fs::remove_dir_all(cfg_server_toml.server_config.path_windows_dir).expect("Could not remove Server Directory");
+        }
+        #[cfg(unix)]{
+        fs::remove_dir_all(cfg_server_toml.server_config.path_unix_dir).expect("Could not remove Server Directory");
+        }
+        return(0, true);
+
+    }
+    return (1, false);
 }
