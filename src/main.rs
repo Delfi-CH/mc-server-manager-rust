@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
 use indexmap::IndexMap;
 use std::env::{self};
-use std::io::{self, Read, Write};
-use std::fs::{self, File};
+use std::io::{self, Read, Write, BufWriter};
+use std::fs::{self, File, OpenOptions};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use dir::{home_dir};
@@ -1504,6 +1504,30 @@ fn download_server() {
             .output()
             .expect("Failed to download File");
 
+        let mut props_read = read_properties_hashmap(props_path.clone());
+
+        if props_read.get("100").map_or(false, |v| v.contains("Error")) {
+                println!("An Error occurred while reading server.properties!");
+        } else {
+            println!("Writing Port {} to server.properties", portnum);
+            props_read.insert("query.port".to_string(), portnum.to_string());
+            props_read.insert("server-port".to_string(), portnum.to_string());
+
+            let props_file = OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .open(&props_path)
+                .expect("Failed to open file for writing");
+
+            let mut writer = BufWriter::new(props_file);
+
+            for (key, value) in &props_read {
+                writeln!(writer, "{}={}", key, value).expect("Could not write to file.");
+            }
+            writer.flush().expect("Failed to flush the buffer");
+            props_read = read_properties_hashmap(props_path.clone());
+            println!("Wrote Port {} to server.properties", props_read.get("server-port").expect("Could not read Port"));
+        }
 
         if modloader == "fabric" {
             #[cfg(windows)] {
