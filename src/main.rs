@@ -1146,6 +1146,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
         {
             server = Some(
                 Command::new(jar_path)
+                    .arg("nogui")
                     .current_dir(command_path)
                     .creation_flags(CREATE_NO_WINDOW)
                     .stdin(Stdio::null())
@@ -1176,6 +1177,7 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
         { unsafe {
             let mut spawn_server = Command::new(jar_path);
             spawn_server
+            .arg("nogui")
             .current_dir(command_path)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -1650,7 +1652,6 @@ fn start_toml() {
     println!("Selected {}", selected_server_name);
 
     if let Some(server_toml_path) = server_list_map.get(&selected_server_name) {
-        println!("{}", server_toml_path);
 
         let cfg_server_str =
             fs::read_to_string(server_toml_path).expect("Could not read server config file");
@@ -1686,7 +1687,6 @@ fn start_toml() {
         }
 
         let props_map = read_properties_hashmap(props_path);
-        println!("{}", props_map.get("server-port").expect("Failed to read Server Props"));
         if let Ok(contents) = fs::read_to_string(&eula_path) {
             if contents.contains("eula = true") {
                 agree_eula = true;
@@ -1816,6 +1816,10 @@ fn list_servers(){
         if cfg_server_toml.server_config.pid == "" {
             is_running = false;
         } else if jps_str.contains(&cfg_server_toml.server_config.pid) {
+            is_running = true;
+        } else if jps_str.contains(".mods.") {
+            is_running = true;
+        } else if jps_str.contains("forge") {
             is_running = true;
         }
 
