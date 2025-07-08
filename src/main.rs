@@ -298,6 +298,9 @@ fn main() {
             "stop" => {
                 stop_server_wrapper();
             }
+            "eee" => {
+                list_servers_hash();
+            }
             _ => {
                 println!("'{}' is not a valid Action", input);
             }
@@ -2536,4 +2539,18 @@ fn remove_server(server_toml_path: String) -> (i32, bool) {
 
     }
     return (1, false);
+}
+fn list_servers_hash() -> HashMap<u32, String> {
+    let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
+    let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+    let mut jps_map: HashMap<u32, String> = HashMap::new();
+
+    for line in jps_str.lines() {
+        if let Some((pid_str, rest)) = line.split_once(' ') {
+            if let Ok(pid) = pid_str.parse::<u32>() {
+                jps_map.insert(pid, rest.to_string());
+            }
+        }
+    }
+    return jps_map;
 }
