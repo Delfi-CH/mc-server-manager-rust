@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+//Imports
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap};
 use indexmap::IndexMap;
 use std::env::{self};
-use std::io::{self, Read, Write, BufWriter};
+use std::io::{self, Read, Write, BufWriter, BufReader, BufRead};
 use std::fs::{self, File, OpenOptions};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use dir::{home_dir};
 use std::process::exit;
 use std::{thread, time::Duration};
-use std::process::Child;
+use std::process::{Child, ChildStdin, ChildStdout, ChildStderr};
 use props_rs::*;
 #[cfg(unix)]
 use libc;
@@ -19,6 +20,9 @@ use libc;
 use std::os::unix::process::CommandExt;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
+
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
 
 
 //Consts
@@ -31,7 +35,35 @@ const MIN_MEM_DEFAULT: i32 = 512;
 const MAX_MEM_DEFAULT: i32 = 2048;
 const PORT_DEFAULT: i32 = 25565;
 
+//Statics
+
+static SERVER_REGISTRY: Lazy<Mutex<HashMap<String, ServerHandle>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
 //Structs
+
+//Structs for spawning and reading stdin/stout on server
+
+pub struct ServerHandle {
+    pub process: Child,
+}
+
+impl ServerHandle {
+    pub fn stdin(&mut self) -> Option<&mut ChildStdin> {
+        self.process.stdin.as_mut()
+    }
+
+    pub fn stdout(&mut self) -> Option<&mut ChildStdout> {
+        self.process.stdout.as_mut()
+    }
+
+    pub fn stderr(&mut self) -> Option<&mut ChildStderr> {
+        self.process.stderr.as_mut()
+    }
+
+    pub fn pid(&self) -> u32 {
+        self.process.id()
+    }
+}
 
 //Structs for config file
 
@@ -173,6 +205,7 @@ fn main() {
     println!("about: Shows Information about the Application");
 	println!("add: Adds a Server via a TOML File");
 	println!("check: Checks if Java is installed on the System");
+    println!("console: Print the Console Output of a specific server.");
 	println!("exit: Exits the Application");
 	println!("init: Looks for a config.toml file. If this file isnt found, it creats it");
     println!("info: Get info about a server.");
@@ -300,6 +333,23 @@ fn main() {
             }
             "eee" => {
                 list_servers_hash();
+            }
+            "console" => {
+                io::stdout().flush().expect("Failed to flush stdout");
+
+                let mut input_path = String::new();
+                io::stdin()
+                .read_line(&mut input_path)
+                .expect("Failed to read path");
+                if input_path == "abort" {
+                    break;
+                }
+                let path = input_path.trim();
+
+                if path.to_lowercase() == "abort" {
+                    break;
+                }
+                let e = read_server_stdout(path);
             }
             _ => {
                 println!("'{}' is not a valid Action", input);
@@ -1042,15 +1092,18 @@ fn start_manual() {
                     path_to_jar
                 );
 
-                let (has_server_started, pid) = start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula, false);
+                let server_handle = start_generic(command_path_jar, &command_path, min_mem_int, max_mem_int, agree_eula, false);
 
-                if has_server_started == true {
-                    println!("Server started sucessfuly with ProcessID (PID) {}", pid);
-                } else {
-                    println!("Something went wrong while starting the server.");
-                }
+                if let Some(handle) = server_handle {
+                    let pid = handle.pid();
+                    println!("Server started successfully with PID {}!", pid);
+                    let mut registry = SERVER_REGISTRY.lock().unwrap();
+                    registry.insert(handle.pid().to_string(), handle);
                 
                 pathsearch = false;
+                } else {
+                    println!("Failed to start Server!");
+                }
             }
             Err(_) => {
                 println!("Path does not lead to a valid .jar file.");
@@ -1059,9 +1112,16 @@ fn start_manual() {
     }
 }
 
-fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u32, eula: bool, is_fml: bool) -> (bool, String) {
+pub fn start_generic(
+    jar_path: &Path,
+    command_path: &Path,
+    mem_min: u32,
+    mem_max: u32,
+    eula: bool,
+    is_fml: bool,
+) -> Option<ServerHandle> {
     if !eula {
-        return (false, "no_start".to_string());
+        return None;
     }
 
     let xms_arg = format!("-Xms{}M", mem_min);
@@ -1070,15 +1130,13 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
     let cfg_app_str = read_cfg_silent();
     let cfg_app_data: Config = toml::from_str(&cfg_app_str).expect("Could not parse TOML");
 
-    let mut server: Option<Child> = None;
+    let server: Option<Child>;
 
-    if is_fml == false {
-
-    if cfg_app_data.system.os.to_lowercase().contains("windows") {
-        #[cfg(windows)]
-        {
-            server = Some(
-                Command::new("java")
+    if !is_fml {
+        if cfg_app_data.system.os.to_lowercase().contains("windows") {
+            #[cfg(windows)]
+            {
+                let process = Command::new("java")
                     .args([
                         xms_arg,
                         xmx_arg,
@@ -1087,134 +1145,108 @@ fn start_generic(jar_path: &Path, command_path: &Path, mem_min: u32, mem_max: u3
                         "nogui".to_string(),
                     ])
                     .current_dir(command_path)
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
+                    .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
                     .spawn()
-                    .expect("Failed to start Java process"),
-            );
+                    .expect("Failed to start Java process");
 
-            thread::sleep(Duration::from_secs(5));
+                thread::sleep(Duration::from_secs(5));
 
-            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
-            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+                let jps = Command::new("jps").arg("-l").output().expect("Failed to run jps");
+                let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
 
-            if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
-                if let Some(ref srv) = server {
-                    return (true, srv.id().to_string());
+                if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
+                    return Some(ServerHandle { process });
                 }
             }
-        }
-    } else if cfg_app_data.system.os_mini.to_lowercase().contains("unix") {
-        #[cfg(unix)]
-        { unsafe {
-            let mut spawn_server = Command::new("java");
-            spawn_server.args([
-                xms_arg,
-                xmx_arg,
-                "-jar".to_string(),
-                jar_path.display().to_string(),
-                "nogui".to_string(),
-            ])
-            .current_dir(command_path)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-
+        } else if cfg_app_data.system.os_mini.to_lowercase().contains("unix") {
+            #[cfg(unix)]
             unsafe {
-                spawn_server.before_exec(|| {
-                    libc::setsid();
-                    Ok(())
-                });
-            }
+                let mut spawn_server = Command::new("java");
+                spawn_server
+                    .args([
+                        xms_arg,
+                        xmx_arg,
+                        "-jar".to_string(),
+                        jar_path.display().to_string(),
+                        "nogui".to_string(),
+                    ])
+                    .current_dir(command_path)
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .before_exec(|| {
+                        libc::setsid();
+                        Ok(())
+                    });
 
-        server = Some(spawn_server.spawn().expect("Failed to spawn detached Java process"));
-        }
-            thread::sleep(Duration::from_secs(5));
+                let process = spawn_server.spawn().expect("Failed to spawn Java process");
 
-            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
-            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+                thread::sleep(Duration::from_secs(5));
 
-            if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
-                if let Some(ref srv) = server {
-                    return (true, srv.id().to_string());
+                let jps = Command::new("jps").arg("-l").output().expect("Failed to run jps");
+                let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+                if jps_str.contains(&command_path.to_string_lossy().to_lowercase()) {
+                    return Some(ServerHandle { process });
                 }
             }
         }
-    }
     } else {
         if cfg_app_data.system.os.to_lowercase().contains("windows") {
             #[cfg(windows)]
-        {
-            server = Some(
-                Command::new(jar_path)
+            {
+                let process = Command::new(jar_path)
                     .arg("nogui")
                     .current_dir(command_path)
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
+                    .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
                     .spawn()
-                    .expect("Failed to spawn Server via run.bat"),
-            );
+                    .expect("Failed to spawn Server via run.bat");
 
-            thread::sleep(Duration::from_secs(20));
+                thread::sleep(Duration::from_secs(20));
 
-            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
-            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+                let jps = Command::new("jps").arg("-l").output().expect("Failed to run jps");
+                let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
 
-            if jps_str.contains("forge") {
-                if let Some(ref srv) = server {
-                    return (true, srv.id().to_string());
+                if jps_str.contains("forge") || jps_str.contains("mod") {
+                    return Some(ServerHandle { process });
                 }
             }
-            if jps_str.contains("mod") {
-                if let Some(ref srv) = server {
-                    return (true, srv.id().to_string());
-                }
-            }
-        }
-        } else if cfg_app_data.system.os_mini.contains("unix")  {
-        #[cfg(unix)]
-        { unsafe {
-            let mut spawn_server = Command::new(jar_path);
-            spawn_server
-            .arg("nogui")
-            .current_dir(command_path)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-
+        } else if cfg_app_data.system.os_mini.to_lowercase().contains("unix") {
+            #[cfg(unix)]
             unsafe {
-                spawn_server.before_exec(|| {
-                    libc::setsid();
-                    Ok(())
-                });
-            }
+                let mut spawn_server = Command::new(jar_path);
+                spawn_server
+                    .arg("nogui")
+                    .current_dir(command_path)
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .before_exec(|| {
+                        libc::setsid();
+                        Ok(())
+                    });
 
-        server = Some(spawn_server.spawn().expect("Failed to spawn Server via run.sh"));
-        }
-            thread::sleep(Duration::from_secs(20));
+                let process = spawn_server.spawn().expect("Failed to spawn Server via run.sh");
 
-            let jps = Command::new("jps").arg("-l").output().expect("Failed to list Java processes");
-            let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+                thread::sleep(Duration::from_secs(20));
 
-            if jps_str.contains("forge") {
-                if let Some(ref srv) = server {
-                    return (true, srv.id().to_string());
+                let jps = Command::new("jps").arg("-l").output().expect("Failed to run jps");
+                let jps_str = String::from_utf8_lossy(&jps.stdout).to_lowercase();
+
+                if jps_str.contains("forge") || jps_str.contains("mod") {
+                    return Some(ServerHandle { process });
                 }
             }
-            if jps_str.contains("mod") {
-                if let Some(ref srv) = server {
-                    return (true, srv.id().to_string());
-                }
-            }
         }
-        }
-
     }
-    (false, "no_start".to_string())
+
+    None
 }
 
 fn download_server() {
@@ -1742,14 +1774,19 @@ fn start_toml() {
 
         println!("Starting Server...");
 
-        let (has_server_started, server_pid) =
+        let server_handle =
             start_generic(path_to_jar, path_server_dir, mem_min, mem_max, agree_eula, is_fml);
 
-        if has_server_started {
-            println!("Server started successfully!");
+        if let Some(handle) = server_handle {
+            let pid = handle.pid();
+            println!("Server started successfully with PID {}!", pid);
+            let mut registry = SERVER_REGISTRY.lock().unwrap();
+            registry.insert(handle.pid().to_string(), handle);
+
             cfg_server_toml.server_config.running = true;
-            cfg_server_toml.server_config.pid = server_pid;
+            cfg_server_toml.server_config.pid = pid.to_string(); 
             write_server_toml(&cfg_server_toml, &server_toml_path);
+
         } else {
             println!("An error occurred while starting the server!");
             println!(
@@ -2553,4 +2590,36 @@ fn list_servers_hash() -> HashMap<u32, String> {
         }
     }
     return jps_map;
+}
+
+fn read_server_stdout(server_id: &str) -> bool {
+    let mut registry = SERVER_REGISTRY.lock().unwrap();
+
+    if let Some(server_handle) = registry.get_mut(server_id) {
+        // Take ownership of the stdout stream
+        if let Some(stdout) = server_handle.process.stdout.take() {
+            let id = server_id.to_string();
+            thread::spawn(move || {
+                let reader = BufReader::new(stdout);
+                for line_result in reader.lines() {
+                    match line_result {
+                        Ok(line) => {
+                            println!("[{} stdout] {}", id, line);
+                        }
+                        Err(e) => {
+                            eprintln!("[{} stdout] Error reading stdout: {}", id, e);
+                            break;
+                        }
+                    }
+                }
+            });
+            true
+        } else {
+            eprintln!("Server '{}' has no stdout to read", server_id);
+            false
+        }
+    } else {
+        eprintln!("No server found with ID '{}'", server_id);
+        false
+    }
 }

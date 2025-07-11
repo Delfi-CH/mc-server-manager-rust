@@ -16,6 +16,11 @@ NO Multithreading + NO WebUI
 - stopping servers with jps -l and kill \<PID> or taskkill /PID \ <PID> [DONE]
 - download all versions of mc java aswell as modloaders [DONE]
 - edit server.properties and user_jvm_args.txt
+- reading server stdout and writing to server stdin
+    - works fine while app runs 24/7 [DONE]
+    - works fine after restarting app
+        - small proxy application
+
 
 ## Stage 2
 

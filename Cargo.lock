@@ -325,6 +325,7 @@ dependencies = [
  "dir",
  "indexmap",
  "libc",
+ "once_cell",
  "open",
  "os_info",
  "props-rs",
