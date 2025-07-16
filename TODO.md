@@ -24,6 +24,8 @@ NO Multithreading + NO WebUI
 
 ## Stage 2
 
+**Completly rewrite the app, because the current Version sucks**
+
 Make the CLI Tool into a CLI-App and a Libary and Multithread it
 
 Make Backend Entry for WebUI
