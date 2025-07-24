@@ -22,7 +22,7 @@ indexmap = { version = "2.10.0", features = ["serde"] }
 props-rs = "0.1.1"
 
 [[bin]]
-name = "V0.X"
+name = "cli-old"
 path = "src/old/main.rs"
 
 [[bin]]
@@ -36,3 +36,7 @@ path = "src/backend/main.rs"
 [[bin]]
 name = "daemon"
 path = "src/daemon/main.rs"
+
+[[bin]]
+name = "install"
+path = "src/install/main.rs"
