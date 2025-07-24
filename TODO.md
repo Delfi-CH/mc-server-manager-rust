@@ -41,6 +41,8 @@ Make WebUI in JS
 
 ## Stage 4
 
+Make an actuall Name
+
 Make Packages (exe, deb, rpm, etc.)
 
 Make Website with GH-Pages
