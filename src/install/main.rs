@@ -5,7 +5,7 @@ use std::io::{self, Write};
 
 use dir::home_dir;
 fn main() {
-    println!("APPNAME Installer V0.1");
+    println!("APPNAME Installer V0.7");
     // think of a name and put it here
     println!("Press ENTER to install the [DEFAULT] option.");
     println!();
@@ -90,18 +90,26 @@ println!("Starting installation...");
 let has_curl = check_curl();
 
 if has_curl == false {
+    #[cfg(unix)] {
     println!("CURL is not installed!");
     println!("Install CURL via");
-    #[cfg(unix)]
+    
         if let Some(cmd) = install_curl_command() {
         println!("{}", cmd);
-}
+        }
+    }
+    #[cfg(windows)] {
+        println!("CURL was not found!");
+        println!("Your Windows Install seemes to corrupted!");
+        println!("Please try to update / restore Windows.")
+    }
+    return;
 } else {
-    println!("Curl was found...");
+    println!("CURL was found...");
     
 }
 
-println!("Creating directory...");
+println!("Creating directoriies...");
 let mcsvman_dir = home_dir().expect("Could not get Home dir").join(".mc-server-manager");
 if fs::metadata(&mcsvman_dir).is_ok() {
     if let Err(e) = fs::remove_dir_all(&mcsvman_dir) {
@@ -110,6 +118,18 @@ if fs::metadata(&mcsvman_dir).is_ok() {
     }
 }
 if let Err(e) = fs::create_dir(&mcsvman_dir) {
+    eprintln!("Failed to create directory: {}", e);
+    return;
+}
+if let Err(e) = fs::create_dir(&mcsvman_dir.join("data")) {
+    eprintln!("Failed to create directory: {}", e);
+    return;
+}
+if let Err(e) = fs::create_dir(&mcsvman_dir.join("servers")) {
+    eprintln!("Failed to create directory: {}", e);
+    return;
+}
+if let Err(e) = fs::create_dir(&mcsvman_dir.join("bin")) {
     eprintln!("Failed to create directory: {}", e);
     return;
 }
@@ -125,9 +145,9 @@ println!("Downloading additional Components...");
 
 
 #[cfg(unix)]
-let mcsvdl_tar_path = mcsvman_dir.join("linux.tar");
+let mcsvdl_tar_path = mcsvman_dir.join("bin").join("linux.tar");
 #[cfg(windows)]
-let mcsvdl_tar_path = mcsvman_dir.join("windows.zip");
+let mcsvdl_tar_path = mcsvman_dir.join("bin").join("windows.zip");
 
 #[cfg(windows)] {
     Command::new("curl")
@@ -137,7 +157,7 @@ let mcsvdl_tar_path = mcsvman_dir.join("windows.zip");
             "-o",
             &mcsvdl_tar_path.display().to_string(),
             ])
-        .current_dir(&mcsvman_dir)
+        .current_dir(&mcsvman_dir.join("bin"))
         .output()
         .expect("Failed to download File");
     Command::new("tar") 
@@ -145,11 +165,11 @@ let mcsvdl_tar_path = mcsvman_dir.join("windows.zip");
             "-xf",
             &mcsvdl_tar_path.display().to_string(),
             ])
-        .current_dir(&mcsvman_dir)
+        .current_dir(&mcsvman_dir.join("bin"))
         .output()
         .expect("Failed to extract File");
     fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
-    fs::remove_file(&mcsvman_dir.join("LICENSE")).expect("Failed to remove File");
+    fs::remove_file(&mcsvman_dir.join("bin").join("LICENSE")).expect("Failed to remove File");
 }
 #[cfg(unix)] {
     Command::new("curl")
@@ -159,7 +179,7 @@ let mcsvdl_tar_path = mcsvman_dir.join("windows.zip");
             "-o",
             &mcsvdl_tar_path.display().to_string(),
             ])
-        .current_dir(&mcsvman_dir)
+        .current_dir(&mcsvman_dir.join("bin"))
         .output()
         .expect("Failed to download File");
     Command::new("tar") 
@@ -167,13 +187,32 @@ let mcsvdl_tar_path = mcsvman_dir.join("windows.zip");
             "-xf",
             &mcsvdl_tar_path.display().to_string(),
             ])
-        .current_dir(&mcsvman_dir)
+        .current_dir(&mcsvman_dir.join("bin"))
         .output()
         .expect("Failed to extract File");
     fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
-    fs::remove_file(&mcsvman_dir.join("LICENSE")).expect("Failed to remove File");
+    fs::remove_file(&mcsvman_dir.join("bin").join("LICENSE")).expect("Failed to remove File");
 }
-// CREATE DIRECTORIES
+Command::new("curl")
+    .args([
+        "-L",
+        "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/neofml_versions.toml",
+        "-o",
+        &mcsvman_dir.join("data").join("neofml_versions.toml").display().to_string(),
+        ])
+    .output()
+    .expect("Failed to download File");
+Command::new("curl")
+    .args([
+        "-L",
+        "https://raw.githubusercontent.com/Delfi-CH/mc-server-manager-rust/refs/heads/main/data/fml_versions.toml",
+        "-o",
+        &mcsvman_dir.join("data").join("fml_versions.toml").display().to_string(),
+        ])
+    .output()
+    .expect("Failed to download File");
+
+    // TODO: CREATE CFG
 }
 
 fn check_curl() -> bool {
