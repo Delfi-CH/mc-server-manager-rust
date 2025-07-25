@@ -1,16 +1,20 @@
+use std::fs;
 // SPDX-License-Identifier: GPL-3.0-or-later
-
+use std::process::Command;
 use std::io::{self, Write};
+
+use dir::home_dir;
 fn main() {
-    println!("Hello World! Installer bin running.");
     println!("APPNAME Installer V0.1");
-    println!("Option 1:");
+    // think of a name and put it here
+    println!("Press ENTER to install the [DEFAULT] option.");
+    println!();
     println!("What Packages do you want to install?");
     println!("1 | Webapp-Backend [DEFAULT]");
     println!("2 | Command-Line App");
     println!("3 | All");
 
-    let input1 = 0;
+    let mut input1 = 0;
     
     loop {
 
@@ -28,22 +32,177 @@ fn main() {
 
     if input == "1" {
         println!("Selecting Webapp-Backend...");
-        let input1 = 1;
+        input1 = 1;
         break;
     } else if input == "2" {
         println!("Selecting Command-Line App...");
-        let input1 = 2;
+        input1 = 2;
         break;
     } else if input == "3" {
         println!("Selecting both options...");
-        let input1 = 3;
+        input1 = 3;
         break;
     } else if input == "" {
         println!("Selecting Webapp-Backend...");
-        let input1 = 1;
+        input1 = 1;
         break;
     } else {
         println!("Not a valid input. Please try again.");
     }  
 }
+println!("Summary: ");
+println!("----------");
+println!("Packages: ");
+if input1 == 1 {
+    println!("- Webapp-Backend");
+} else if input1 == 2 {
+    println!("- Command-Line App");
+} else if input1 == 3 {
+    println!("- Webapp-Backend");
+    println!("- Command-Line App");     
+} else {
+    println!("An Error occured.");
+    println!("Please restart the Installer.");
+    return;
 }
+println!();
+loop {
+println!("Continiue? [Y/N]");
+let mut input = String::new();
+
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Could not read the Input");
+
+        let input= input.to_lowercase();
+        let input = input.trim();
+
+if input == "n" {
+    println!("Exiting Installer...");
+    return;
+} else if input == "y" {
+    break;
+} else {
+    println!("{} is not a valid Input", input);
+}
+}
+println!("Starting installation...");
+let has_curl = check_curl();
+
+if has_curl == false {
+    println!("CURL is not installed!");
+    println!("Install CURL via");
+    #[cfg(unix)]
+        if let Some(cmd) = install_curl_command() {
+        println!("{}", cmd);
+}
+} else {
+    println!("Curl was found...");
+    
+}
+
+println!("Creating directory...");
+let mcsvman_dir = home_dir().expect("Could not get Home dir").join(".mc-server-manager");
+if fs::metadata(&mcsvman_dir).is_ok() {
+    if let Err(e) = fs::remove_dir_all(&mcsvman_dir) {
+        eprintln!("Failed to remove directory: {}", e);
+        return;
+    }
+}
+if let Err(e) = fs::create_dir(&mcsvman_dir) {
+    eprintln!("Failed to create directory: {}", e);
+    return;
+}
+
+if input1 == 1 || input1 == 3 {
+    println!("Downloading Webapp-Backend...");
+    // Download when finished...
+} else if input1 == 2 || input1 == 3 {
+    println!("Downloading Command-Line App...");
+    // Download when finished...
+}
+println!("Downloading additional Components...");
+
+
+#[cfg(unix)]
+let mcsvdl_tar_path = mcsvman_dir.join("linux.tar");
+#[cfg(windows)]
+let mcsvdl_tar_path = mcsvman_dir.join("windows.zip");
+
+#[cfg(windows)] {
+    Command::new("curl")
+        .args(&[
+            "-L",    
+            "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+            "-o",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(&mcsvman_dir)
+        .output()
+        .expect("Failed to download File");
+    Command::new("tar") 
+        .args(&[
+            "-xf",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(&mcsvman_dir)
+        .output()
+        .expect("Failed to extract File");
+    fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
+    fs::remove_file(&mcsvman_dir.join("LICENSE")).expect("Failed to remove File");
+}
+#[cfg(unix)] {
+    Command::new("curl")
+        .args(&[
+            "-L",    
+            "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+            "-o",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(&mcsvman_dir)
+        .output()
+        .expect("Failed to download File");
+    Command::new("tar") 
+        .args(&[
+            "-xf",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(&mcsvman_dir)
+        .output()
+        .expect("Failed to extract File");
+    fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
+    fs::remove_file(&mcsvman_dir.join("LICENSE")).expect("Failed to remove File");
+}
+// CREATE DIRECTORIES
+}
+
+fn check_curl() -> bool {
+    Command::new("curl")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(unix)]
+fn install_curl_command() -> Option<&'static str> {
+    use std::fs;
+
+    let os_release = fs::read_to_string("/etc/os-release").ok()?;
+    if os_release.contains("ubuntu") || os_release.contains("debian") {
+        Some("sudo apt-get update && sudo apt-get install -y curl")
+    } else if os_release.contains("fedora") {
+        Some("sudo dnf install -y curl")
+    } else if os_release.contains("rhel") {
+        Some("sudo yum install -y curl")
+    } else if os_release.contains("arch") {
+        Some("sudo pacman -Sy curl")
+    } else if os_release.contains("alpine") {
+        Some("sudo apk add curl")
+    } else if os_release.contains("suse") {
+        Some("sudo zypper install curl")
+    } else {
+        Some("Install from Source")
+    }
+}
+

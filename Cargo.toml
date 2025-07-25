@@ -40,3 +40,7 @@ path = "src/daemon/main.rs"
 [[bin]]
 name = "install"
 path = "src/install/main.rs"
+
+[[bin]]
+name = "updater"
+path = "src/update/main.rs"
