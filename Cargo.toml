@@ -44,3 +44,7 @@ path = "src/install/main.rs"
 [[bin]]
 name = "updater"
 path = "src/update/main.rs"
+
+[lib]
+name = "lib"
+path = "src/lib/lib.rs"
