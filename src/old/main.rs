@@ -83,9 +83,9 @@ struct Config {
 #[derive(Serialize, Deserialize, Debug)]
 struct System {
     #[serde(default)]
-    os_type: String,
+    os: String,
     #[serde(default)]
-    os_details: String,
+    os_mini: String,
     #[serde(default)]
     servers: i32,
     #[serde(default)]
@@ -97,8 +97,8 @@ struct System {
 impl Default for System {
     fn default() -> Self {
         System {
-            os_type: String::new(),
-            os_details: String::new(),
+            os: String::new(),
+            os_mini: String::new(),
             servers: 0,
             after_initial_setup: false,
             data_path: String::new(),
