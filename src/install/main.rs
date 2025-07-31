@@ -1,12 +1,13 @@
-use std::fs;
 // SPDX-License-Identifier: GPL-3.0-or-later
+use std::fs;
 use std::process::Command;
 use std::io::{self, Write};
+use app_lib::*;
 
 use dir::home_dir;
 fn main() {
     println!("APPNAME Installer V0.7");
-    // think of a name and put it here
+    // TODO: think of a name and put it here
     println!("Press ENTER to install the [DEFAULT] option.");
     println!();
     println!("What Packages do you want to install?");
@@ -137,62 +138,13 @@ if let Err(e) = fs::create_dir(&mcsvman_dir.join("bin")) {
 if input1 == 1 || input1 == 3 {
     println!("Downloading Webapp-Backend...");
     // Download when finished...
-} else if input1 == 2 || input1 == 3 {
+} 
+if input1 == 2 || input1 == 3 {
     println!("Downloading Command-Line App...");
     // Download when finished...
 }
 println!("Downloading additional Components...");
-
-
-#[cfg(unix)]
-let mcsvdl_tar_path = mcsvman_dir.join("bin").join("linux.tar");
-#[cfg(windows)]
-let mcsvdl_tar_path = mcsvman_dir.join("bin").join("windows.zip");
-
-#[cfg(windows)] {
-    Command::new("curl")
-        .args(&[
-            "-L",    
-            "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
-            "-o",
-            &mcsvdl_tar_path.display().to_string(),
-            ])
-        .current_dir(&mcsvman_dir.join("bin"))
-        .output()
-        .expect("Failed to download File");
-    Command::new("tar") 
-        .args(&[
-            "-xf",
-            &mcsvdl_tar_path.display().to_string(),
-            ])
-        .current_dir(&mcsvman_dir.join("bin"))
-        .output()
-        .expect("Failed to extract File");
-    fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
-    fs::remove_file(&mcsvman_dir.join("bin").join("LICENSE")).expect("Failed to remove File");
-}
-#[cfg(unix)] {
-    Command::new("curl")
-        .args(&[
-            "-L",    
-            "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
-            "-o",
-            &mcsvdl_tar_path.display().to_string(),
-            ])
-        .current_dir(&mcsvman_dir.join("bin"))
-        .output()
-        .expect("Failed to download File");
-    Command::new("tar") 
-        .args(&[
-            "-xf",
-            &mcsvdl_tar_path.display().to_string(),
-            ])
-        .current_dir(&mcsvman_dir.join("bin"))
-        .output()
-        .expect("Failed to extract File");
-    fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
-    fs::remove_file(&mcsvman_dir.join("bin").join("LICENSE")).expect("Failed to remove File");
-}
+dl_mcsvdl();
 Command::new("curl")
     .args([
         "-L",
@@ -212,7 +164,9 @@ Command::new("curl")
     .output()
     .expect("Failed to download File");
 
-    // TODO: CREATE CFG
+    println!("Creating configuration file...");
+    create_config();
+    println!("Done!");
 }
 
 fn check_curl() -> bool {

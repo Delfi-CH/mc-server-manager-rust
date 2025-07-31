@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::process::Command;
 use std::collections::HashMap;
 use dir::home_dir;
 #[cfg(windows)]
@@ -26,6 +27,84 @@ fn fallback_path() -> PathBuf {
     {
         PathBuf::from("/var/tmp/myapp")
     }
+}
+
+pub fn get_dotpath() -> PathBuf {
+
+    let mut dotpath = home_dir().unwrap_or(fallback_path());
+    dotpath = dotpath.join(".mc-server-manager");
+    return dotpath;
+}
+
+// MCSVDL stuff
+
+#[cfg(unix)]
+fn check_mcsvdl_unix_elf() -> bool {
+    Command::new(get_dotpath().join("bin").join("mcsvdl"))
+        .arg("--help")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+#[cfg(windows)]
+fn check_mcsvdl_win_pe() -> bool {
+    Command::new(get_dotpath().join("bin").join("mcsvdl.exe"))
+        .arg("--help")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+pub fn dl_mcsvdl() {
+    #[cfg(unix)]
+let mcsvdl_tar_path = get_dotpath().join("bin").join("linux.tar");
+#[cfg(windows)]
+let mcsvdl_tar_path = get_dotpath().join("bin").join("windows.zip");
+
+#[cfg(windows)] {
+    Command::new("curl")
+        .args(&[
+            "-L",    
+            "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/windows.zip",
+            "-o",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(get_dotpath().join("bin"))
+        .output()
+        .expect("Failed to download File");
+    Command::new("tar") 
+        .args(&[
+            "-xf",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(get_dotpath().join("bin"))
+        .output()
+        .expect("Failed to extract File");
+    fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
+    fs::remove_file(get_dotpath().join("bin").join("LICENSE")).expect("Failed to remove File");
+}
+#[cfg(unix)] {
+    Command::new("curl")
+        .args(&[
+            "-L",    
+            "https://github.com/Delfi-CH/mc-server-downloader-py/releases/latest/download/linux.tar",
+            "-o",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(get_dotpath().join("bin"))
+        .output()
+        .expect("Failed to download File");
+    Command::new("tar") 
+        .args(&[
+            "-xf",
+            &mcsvdl_tar_path.display().to_string(),
+            ])
+        .current_dir(get_dotpath().join("bin"))
+        .output()
+        .expect("Failed to extract File");
+    fs::remove_file(&mcsvdl_tar_path).expect("Failed to remove Archive");
+    fs::remove_file(get_dotpath().join("bin").join("LICENSE")).expect("Failed to remove File");
+}
 }
 
 // config.toml stuff
@@ -101,11 +180,11 @@ fn get_os_details() -> String {
         return os_type + &unix_subtype + &os_ver + ", Build " + &macos_build;
     } else if cfg!(target_os = "freebsd") {
         unix_subtype = ", BSD (FreeBSD)".to_string();
-        os_ver = "Unknown Version".to_string();
+        os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
         return os_type + &unix_subtype + &os_ver;
     } else if cfg!(target_os = "openbsd") {
         unix_subtype = ", BSD (OpenBSD)".to_string();
-        os_ver = "Unknown Version".to_string();
+        os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
         return os_type + &unix_subtype + &os_ver;
     } else {
         unix_subtype = ", Unknown Unix Variant".to_string();
@@ -131,13 +210,19 @@ fn get_os_details() -> String {
 
 
 pub fn create_config() {
+    let mut mcsvdl_path = PathBuf::new();
+    #[cfg(windows)]
+    if check_mcsvdl_win_pe() == true {
+        mcsvdl_path = get_dotpath().join("bin").join("mcsvdl.exe");
+    }
+    #[cfg(unix)]
+    if check_mcsvdl_unix_elf() == true {
+        mcsvdl_path = get_dotpath().join("bin").join("mcsvdl");
+    }
     if check_config_existance() == true {
         fs::remove_file(get_config_path()).expect("Could not delete file");
-        File::create(get_config_path()).expect("Could not create file");
-    } else {
-        File::create(get_config_path()).expect("Could not create file");
     }
-    let mut cfg_file = File::create("config.toml").expect("Could not create file");
+    let mut cfg_file = File::create(get_config_path()).expect("Could not create file");
             cfg_file
                 .write_all("# Config for mc-server-management\n\n".as_bytes())
                 .expect("Could not write to file");
@@ -160,19 +245,21 @@ pub fn create_config() {
                 .write_all("after_initial_setup = false\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all("data_path = \"\"\n".as_bytes())
+                .write_all(format!("data_path = \"{}\" \n", get_dotpath().join("data").display()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[mcsvdl]\n".as_bytes())
                 .expect("Could not write to file");
+            #[cfg(unix)]
             cfg_file
-                .write_all("has_mcsvdl = false\n".as_bytes())
+                .write_all(format!("has_mcsvdl = {}\n",check_mcsvdl_unix_elf()).as_bytes())
+                .expect("Could not write to file");
+            #[cfg(windows)]
+            cfg_file
+                .write_all(format!("has_mcsvdl = {}\n",check_mcsvdl_win_pe()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all("mcsvdl_path = \"\"\n".as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all("mcsvdl_version = \"\"\n".as_bytes())
+                .write_all(format!("mcsvdl_path = \"{}\"\n", mcsvdl_path.display()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[storage]\n".as_bytes())
