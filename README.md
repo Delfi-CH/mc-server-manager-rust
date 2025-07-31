@@ -25,6 +25,9 @@ Recommended: 8 Gigabytes and more.
 
 ### Operating Systems
 
+**Only Windows and popular Linux Distributions are supported and have downloadable exectuables.**
+**However: Compiling on the BSD variants and MacOS might be possible but is not supported.**
+
 #### Windows:
 
 - Windows 10
