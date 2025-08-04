@@ -3,7 +3,6 @@ use std::fs;
 use std::process::Command;
 use std::io::{self, Write};
 use app_lib::*;
-
 use dir::home_dir;
 fn main() {
     println!("APPNAME Installer V0.7");

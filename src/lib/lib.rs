@@ -6,8 +6,110 @@ use std::io::{Read, Write};
 use std::process::Command;
 use std::collections::HashMap;
 use dir::home_dir;
+use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
 #[cfg(windows)]
 use winver::*;
+
+// Structs
+
+// Structs for config.toml
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Config {
+    title: String,
+    #[serde(default)]
+    system: System,
+    #[serde(default)]
+    mcsvdl: McsvdlInfo,
+    #[serde(default)]
+    storage: Storage,
+    #[serde(default)]
+    server_list: Servers,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct System {
+    #[serde(default)]
+    os_type: String,
+    #[serde(default)]
+    os_details: String,
+    #[serde(default)]
+    servers: i32,
+    #[serde(default)]
+    after_initial_setup: bool,
+    #[serde(default)]
+    app_path: String,
+    #[serde(default)]
+    bin_path: String,
+    #[serde(default)]
+    data_path: String,
+}
+
+impl Default for System {
+    fn default() -> Self {
+        System {
+            os_type: String::new(),
+            os_details: String::new(),
+            servers: 0,
+            after_initial_setup: false,
+            app_path: String::new(),
+            bin_path: String::new(),
+            data_path: String::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct McsvdlInfo {
+    #[serde(default)]
+    has_mcsvdl: bool,
+    #[serde(default)]
+    mcsvdl_path: String,
+    #[serde(default)]
+    mcsvdl_version: String,
+}
+
+impl Default for McsvdlInfo {
+    fn default() -> Self {
+        McsvdlInfo {
+            has_mcsvdl: false,
+            mcsvdl_path: String::new(),
+            mcsvdl_version: String::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Storage {
+    #[serde(default)]
+    use_default_server_dir: bool,
+    #[serde(default)]
+    directory: String,
+}
+
+impl Default for Storage {
+    fn default() -> Self {
+        Storage {
+            use_default_server_dir: false,
+            directory: "none".into(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Servers {
+    #[serde(default)]
+    server_list: IndexMap<String, String>,
+}
+
+impl Default for Servers {
+    fn default() -> Self {
+        Servers {
+            server_list: IndexMap::new(),
+        }
+    }
+}
 
 // Sanity Check
 
@@ -175,8 +277,8 @@ fn get_os_details() -> String {
         unix_subtype = ", MacOS".to_string();
 
         let mut macos_build = String::new();
-        os_ver = "99.99".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
-        macos_build = "99999".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
+        os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
+        macos_build = "Unknown Build".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
         return os_type + &unix_subtype + &os_ver + ", Build " + &macos_build;
     } else if cfg!(target_os = "freebsd") {
         unix_subtype = ", BSD (FreeBSD)".to_string();
@@ -208,6 +310,37 @@ fn get_os_details() -> String {
 }
 }
 
+// Reading Config
+
+fn read_config_to_str() -> String {
+
+    let config_path = home_dir().unwrap_or(fallback_path()).join(".mc-server-manager").join("config.toml");
+    
+    match File::open(config_path) {
+        Ok(mut app_cfg) => {
+            let mut app_cfg_content = String::new();
+            if let Err(e) = app_cfg.read_to_string(&mut app_cfg_content) {
+                eprintln!("Error reading file: {}", e);
+                return app_cfg_content;
+            } else {
+                return app_cfg_content;
+            }
+        }
+        Err(_) => {
+            eprintln!("No config.toml found!");
+            return "".to_string();      
+        }
+    }
+}
+
+fn parse_config(config_string: String) -> Config {
+    let mut cfg_app_data: Config = toml::from_str(&config_string)
+        .expect("Could not parse TOML");
+
+    return cfg_app_data;
+}
+
+// Writing Config
 
 pub fn create_config() {
     let mut mcsvdl_path = PathBuf::new();
@@ -245,7 +378,13 @@ pub fn create_config() {
                 .write_all("after_initial_setup = false\n".as_bytes())
                 .expect("Could not write to file");
             cfg_file
-                .write_all(format!("data_path = \"{}\" \n", get_dotpath().join("data").display()).as_bytes())
+                .write_all(format!("app_path = '{}'\n", get_dotpath().display()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("bin_path = '{}'\n", get_dotpath().join("bin").display()).as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all(format!("data_path = '{}'\n", get_dotpath().join("data").display()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[mcsvdl]\n".as_bytes())
@@ -256,10 +395,7 @@ pub fn create_config() {
                 .expect("Could not write to file");
             #[cfg(windows)]
             cfg_file
-                .write_all(format!("has_mcsvdl = {}\n",check_mcsvdl_win_pe()).as_bytes())
-                .expect("Could not write to file");
-            cfg_file
-                .write_all(format!("mcsvdl_path = \"{}\"\n", mcsvdl_path.display()).as_bytes())
+                .write_all(format!("mcsvdl_path = '{}'\n", mcsvdl_path.display()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
                 .write_all("[storage]\n".as_bytes())
