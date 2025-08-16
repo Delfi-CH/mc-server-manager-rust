@@ -261,7 +261,7 @@ fn get_os_details() -> String {
         unix_subtype = ", Linux".to_string();
 
         let mut linux_dist = String::new();
-        let os_release_file = read_os_release();
+        let os_release_file = read_os_release(); //Wants to compile on FreeBSD?
         let dist_name = os_release_file
             .get("NAME")
             .map_or("Unknown Distribution", |v| v.as_str());
@@ -275,7 +275,6 @@ fn get_os_details() -> String {
 
     } else if cfg!(target_os = "macos") {
         unix_subtype = ", MacOS".to_string();
-
         let mut macos_build = String::new();
         os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
         macos_build = "Unknown Build".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
