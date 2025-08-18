@@ -26,9 +26,8 @@ NO Multithreading + NO WebUI
 
 **Completly rewrite the app, because the current Version sucks**
 
-Make the CLI Tool into a CLI-App and a Libary and Multithread it
-
-Make Backend Entry for WebUI
+- Give acess to the stdin and stdout via a daemon/background process
+- 
 
 
 ## Stage 3
