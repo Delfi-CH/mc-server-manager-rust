@@ -272,7 +272,7 @@ fn get_os_details() -> String {
 
     #[cfg(target_os = "macos")]
     {
-        let unix_subtype = ", MacOS";
+        let unix_subtype = ", MacOS, ";
         os_ver = "Unknown Version".to_string(); // TODO: replace with solution
         let macos_build = "Unknown Build".to_string(); // TODO: replace with solution
         return os_type + unix_subtype + &os_ver + ", Build " + &macos_build;
@@ -280,14 +280,14 @@ fn get_os_details() -> String {
 
     #[cfg(target_os = "freebsd")]
     {
-        let unix_subtype = ", BSD (FreeBSD)";
+        let unix_subtype = ", BSD (FreeBSD), ";
         os_ver = "Unknown Version".to_string(); // TODO: replace with solution
         return os_type + unix_subtype + &os_ver;
     }
 
     #[cfg(target_os = "openbsd")]
     {
-        let unix_subtype = ", BSD (OpenBSD)";
+        let unix_subtype = ", BSD (OpenBSD), ";
         os_ver = "Unknown Version".to_string(); // TODO: replace with solution
         return os_type + unix_subtype + &os_ver;
     }
@@ -300,7 +300,7 @@ fn get_os_details() -> String {
         target_os = "openbsd"
     ))))]
     {
-        let unix_subtype = ", Unknown Unix Variant";
+        let unix_subtype = ", Unknown Unix Variant,";
         os_ver = "Unknown Version".to_string();
         return os_type + unix_subtype + &os_ver;
     }

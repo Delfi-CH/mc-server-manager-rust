@@ -194,7 +194,7 @@ fn install_curl_command() -> Option<&'static str> {
     } else if os_release.contains("suse") {
         Some("sudo zypper install curl")
     } else {
-        Some("Install from Source")
+        Some("Check your Package-Manager or Install from Source")
     }
 }
 
