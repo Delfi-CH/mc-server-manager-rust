@@ -246,7 +246,6 @@ fn read_os_release() -> HashMap<String, String> {
     } else {
         eprintln!("Warning: Could not read /etc/os-release");
     }
-
     info
 }
 
@@ -254,14 +253,11 @@ fn get_os_details() -> String {
     let os_type = get_os();
     let mut os_ver = String::new();
 
-    #[cfg(unix)] {
-    let mut unix_subtype = String::new();
-    if cfg!(target_os = "linux") {
+    #[cfg(target_os = "linux")]
+    {
+        let unix_subtype = ", Linux";
+        let os_release_file = read_os_release();
 
-        unix_subtype = ", Linux".to_string();
-
-        let mut linux_dist = String::new();
-        let os_release_file = read_os_release(); //Wants to compile on FreeBSD?
         let dist_name = os_release_file
             .get("NAME")
             .map_or("Unknown Distribution", |v| v.as_str());
@@ -271,27 +267,42 @@ fn get_os_details() -> String {
             .map_or("Unknown Version", |v| v.as_str());
 
         let linux_dist = format!("{} {}", dist_name, os_ver);
-        return os_type + &unix_subtype + ", " + &linux_dist;
-
-    } else if cfg!(target_os = "macos") {
-        unix_subtype = ", MacOS".to_string();
-        let mut macos_build = String::new();
-        os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
-        macos_build = "Unknown Build".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
-        return os_type + &unix_subtype + &os_ver + ", Build " + &macos_build;
-    } else if cfg!(target_os = "freebsd") {
-        unix_subtype = ", BSD (FreeBSD)".to_string();
-        os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
-        return os_type + &unix_subtype + &os_ver;
-    } else if cfg!(target_os = "openbsd") {
-        unix_subtype = ", BSD (OpenBSD)".to_string();
-        os_ver = "Unknown Version".to_string(); // TODO: RELPACE WITH ACTUAL SOLUTION
-        return os_type + &unix_subtype + &os_ver;
-    } else {
-        unix_subtype = ", Unknown Unix Variant".to_string();
-        os_ver = "Unknown Version".to_string();
-        return os_type + &unix_subtype + &os_ver;
+        return os_type + unix_subtype + ", " + &linux_dist;
     }
+
+    #[cfg(target_os = "macos")]
+    {
+        let unix_subtype = ", MacOS";
+        os_ver = "Unknown Version".to_string(); // TODO: replace with solution
+        let macos_build = "Unknown Build".to_string(); // TODO: replace with solution
+        return os_type + unix_subtype + &os_ver + ", Build " + &macos_build;
+    }
+
+    #[cfg(target_os = "freebsd")]
+    {
+        let unix_subtype = ", BSD (FreeBSD)";
+        os_ver = "Unknown Version".to_string(); // TODO: replace with solution
+        return os_type + unix_subtype + &os_ver;
+    }
+
+    #[cfg(target_os = "openbsd")]
+    {
+        let unix_subtype = ", BSD (OpenBSD)";
+        os_ver = "Unknown Version".to_string(); // TODO: replace with solution
+        return os_type + unix_subtype + &os_ver;
+    }
+
+    // Fallback for unknown Unix variants
+    #[cfg(all(unix, not(any(
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "freebsd",
+        target_os = "openbsd"
+    ))))]
+    {
+        let unix_subtype = ", Unknown Unix Variant";
+        os_ver = "Unknown Version".to_string();
+        return os_type + unix_subtype + &os_ver;
     }
 
     #[cfg(windows)] {
