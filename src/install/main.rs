@@ -5,6 +5,7 @@ use std::io::{self, Write};
 use app_lib::*;
 use dir::home_dir;
 fn main() {
+    println!();
     println!("APPNAME Installer V0.7");
     // TODO: think of a name and put it here
     println!("Press ENTER to install the [DEFAULT] option.");
@@ -50,8 +51,50 @@ fn main() {
         println!("Not a valid input. Please try again.");
     }  
 }
+let mut port: u32=29900;
+if input1 == 1 || input1 == 3 {
+println!();
+println!("Select the WebApp Port");
+println!("[DEFAULT]: 29900");
+
+loop {
+    print!("->| ");
+    io::stdout().flush().unwrap();
+
+    let mut port_input = String::new();
+    io::stdin()
+        .read_line(&mut port_input)
+        .expect("Could not read the input");
+
+    let port_input = port_input.trim();
+
+    if port_input == "" {
+        println!("Selecting Port {}...", port);
+        break;
+    }
+
+    match port_input.parse::<u32>() {
+        Ok(port_input_u32) => {
+            if port_input_u32 <= 1024 {
+                println!("Cannot bind to Ports 1-1024. Please try again.");
+            } else if port_input_u32 == 29001 {
+                println!("Port 29001 is already in use for backend Services. Please try again.");
+            } else if port_input_u32 > 65535 {
+                println!("Port can't be bigger than 65535. Please try again.");
+            } else {
+                println!("Selecting Port {}...", port_input_u32);
+                port = port_input_u32;
+                break;
+            }
+            }
+        Err(_) => {
+            println!("Not a valid input. Please enter a numeric port.");
+        }
+        }
+    }
+}
 println!("Summary: ");
-println!("----------");
+println!("---------------");
 println!("Packages: ");
 if input1 == 1 {
     println!("- Webapp-Backend");
@@ -64,6 +107,11 @@ if input1 == 1 {
     println!("An Error occured.");
     println!("Please restart the Installer.");
     return;
+}
+println!("---------------");
+println!("Configuration:");
+if input1 == 1 || input1 == 3 {
+println!("- Webapp Port: {}", port);
 }
 println!();
 loop {

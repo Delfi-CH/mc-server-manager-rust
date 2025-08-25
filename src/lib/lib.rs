@@ -254,8 +254,7 @@ fn read_os_release() -> HashMap<String, String> {
     }
     info
 }
-
-fn get_os_details() -> String {
+pub fn get_os_details() -> String {
     let os_type = get_os();
     let mut os_ver = String::new();
 
@@ -433,10 +432,9 @@ pub fn create_config() {
 // Time and stuff
 
 pub fn get_time_hms() -> String {
-    // Get the current local time
+    
     let now = Local::now();
 
-    // Format the time as HH:MM:SS
     let time_string = now.format("%H:%M:%S").to_string();
     return time_string;
 }
