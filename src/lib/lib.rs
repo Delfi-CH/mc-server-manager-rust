@@ -6,6 +6,7 @@ use std::io::{Read, Write};
 use std::process::Command;
 use std::collections::HashMap;
 use dir::home_dir;
+use chrono::Local;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 #[cfg(windows)]
@@ -424,6 +425,17 @@ pub fn create_config() {
                 .expect("Could not write to file");
 }
  
+// Time and stuff
+
+pub fn get_time_hms() -> String {
+    // Get the current local time
+    let now = Local::now();
+
+    // Format the time as HH:MM:SS
+    let time_string = now.format("%H:%M:%S").to_string();
+    return time_string;
+}
+
 
 
 
