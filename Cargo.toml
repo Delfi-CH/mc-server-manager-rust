@@ -30,7 +30,7 @@ name = "cli-old"
 path = "src/old/main.rs"
 
 [[bin]]
-name = "cli-reworked"
+name = "cli"
 path = "src/cli/main.rs"
 
 [[bin]]

@@ -4,6 +4,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::process::Command;
+use std::net::TcpStream;
 use std::collections::HashMap;
 use dir::home_dir;
 use chrono::Local;
@@ -111,6 +112,10 @@ impl Default for Servers {
         }
     }
 }
+
+// Consts
+
+pub const DAEMON_ADDR: &str = "127.0.0.1:29900";
 
 // Sanity Check
 
@@ -434,6 +439,39 @@ pub fn get_time_hms() -> String {
     // Format the time as HH:MM:SS
     let time_string = now.format("%H:%M:%S").to_string();
     return time_string;
+}
+
+// Daemon/Service
+
+pub fn establish_connection() -> bool {
+
+    match TcpStream::connect(DAEMON_ADDR) {
+        Ok(mut stream) => {
+
+            let command = "hello\n";
+            stream.write_all(command.as_bytes()).err();
+
+            let mut buffer = [0; 512];
+            match stream.read(&mut buffer) {
+                Ok(n) => {
+                    let response = str::from_utf8(&buffer[..n]).unwrap_or("[Invalid UTF-8]");
+                    if response.trim() == "Connection established sucessfully!" {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                Err(e) => {
+                    println!("Failed to read from server: {}", e);
+                    return false;
+                }
+            }
+        }
+        Err(e) => {
+            println!("Failed to connect: {}", e);
+            return false;
+        }
+    }
 }
 
 
