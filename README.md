@@ -152,7 +152,7 @@ This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc
 
 
   **Verify the Installation by running**
-    ```bash
+  ```bash
   java -version
   ```
 
@@ -211,7 +211,7 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 - Minecraft 1.0.x - 1.7.x
     - We dont support these versions.
 
-### Modloaders
+### Mod/Plugin-loaders
 
 - Forge:
   - Forge is a open-source Minecraft Modding API and Modloader. It has existed for a long time and is compatible with most Minecraft versions. 
@@ -232,14 +232,15 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 Note that Versions labled "April Fools" cannot be run with any modloaders.
 ## Configuration
 
-For configuring the app, TOML (Tom's Obvious Minimal Language) is beeing used. You can read more about it [here](https://toml.io/)
+The software uses a [TOML (Tom's Obvious Minimal Language)](https://toml.io/) file, located at
+``C:\Users\<Your User>\.mc-server-manager\config.toml`` on Windows and ``/home/<Your User>/.mc-server-manager/config.toml`` on Linux.
 
 ## FAQ
 
 - Q: I have Java installed, but i get something like "Java wasn't found or is missing!"
-- A: Check if Java is in your PATH variable. You can do this by running ```java -version```in a Terminal
+- A: Check if Java is in your PATH variable. You can do this by running ```java -version``` in a Terminal
 - Q: Is this affiliated or endorsed by Mojang / Microsoft?
-- A: No, this Software is not affiliated, endorsed or connected to Mojang  and/or Microsoft.
+- A: No, this Software is not an official Minecraft Product, nor is it approved by or associated with Mojang AB or Microsoft. 
 
 
 ## Compiling it yourself
