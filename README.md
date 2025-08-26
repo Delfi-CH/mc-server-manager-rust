@@ -10,6 +10,17 @@ rust tool for managing multiple selfohosted minecraft server
 
 This app belongs to [delfi-ch/mc-server-panel](https://github.com/Delfi-CH/mc-server-panel). For a general overview of the project, please look there.
 
+# Table of Contents
+
+- [Overview](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#mc-server-management-rust)
+- [Requirements](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#requirements)
+- [Installation](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#installation)
+- [Minecraft Support](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#minecraft-support)
+- [Configuration](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#minecraft-support)
+- [FAQ](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#minecraft-support)
+- [Compiling](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#minecraft-support)
+- [Legal](https://github.com/Delfi-CH/mc-server-manager-rust/tree/main?tab=readme-ov-file#minecraft-support)
+
 ## Requirements
 
 ### Processor:
@@ -32,7 +43,6 @@ Recommended: 8 Gigabytes and more.
 
 #### Windows:
 
-- Windows 10
 - Windows 11
 
 #### Linux: 
@@ -238,7 +248,8 @@ See [here](https://github.com/Delfi-CH/mc-server-management/blob/main/COMPILING.
 
 ## Legal
 
-THIS SOFTWARE IS NOT AFFILIATED OR ENDORSED WITH MOJANG AB OR MICROSOFT.
+Minecraft is a trademark of Mojang AB / Microsoft.
+NOT AN OFFICIAL MINECRAFT SOFTWARE. NOT APPROVED BY OR ASSOCIATED WITH MOJANG AB OR MICROSOFT.
 
 This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).
 For more information, please visit https://www.gnu.org/licenses/gpl-3.0
