@@ -1,11 +1,14 @@
 use std::net::TcpListener;
 use std::io::{Read, Write};
 use std::thread;
+use app_lib::*;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:29900").unwrap();
-
-    for stream in listener.incoming() {
+    println!("[{}] Starting APPNAMEd...", get_time_hms());
+    match TcpListener::bind(DAEMON_ADDR) {
+        Ok(listener) => {
+        println!("[{}] Listening on TCP {}...", get_time_hms(), DAEMON_ADDR);
+        for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
                 thread::spawn(move || {
@@ -32,6 +35,15 @@ fn main() {
             Err(e) => eprintln!("Connection failed: {}", e),
         }
     }
+        }
+        Err(e) => {
+            eprintln!("[{}] Could not establish a TCP Listener {}!", get_time_hms(),DAEMON_ADDR);
+            eprintln!("[{}] Exiting APPNAMEd...", get_time_hms());
+            std::process::exit(1);
+        }
+    };
+
+    
 }
 
 fn connection_established() -> String {

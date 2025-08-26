@@ -28,6 +28,8 @@ Recommended: 8 Gigabytes and more.
 **Only Windows and popular Linux Distributions are supported and have downloadable exectuables.**
 **However: Compiling on the BSD variants and MacOS should be possible but is not supported.**
 
+**Beta/Testing/Unstable Versions of any Operating System are not supported.**
+
 #### Windows:
 
 - Windows 10
@@ -36,13 +38,13 @@ Recommended: 8 Gigabytes and more.
 #### Linux: 
 
 #### **Debian-based:**
-- Ubuntu 24.04 or higher
-- Debian 12 or higher
+- Ubuntu 24.04 LTS or Ubuntu 25.04 or later
+- Debian 13 or higher
 
 
 #### **RedHat-based:**
 
-- Fedora 41 or higher
+- Fedora 42 or higher
 - RHEL 9 or higher
 - "RHEL-Clone (Oracle Linux, AlmaLinux, etc..)" compatible with RHEL 9 or higher
 
