@@ -36,7 +36,7 @@ fn main() {
         }
     }
         }
-        Err(e) => {
+        Err(_) => {
             eprintln!("[{}] Could not establish a TCP Listener {}!", get_time_hms(),DAEMON_ADDR);
             eprintln!("[{}] Exiting APPNAMEd...", get_time_hms());
             std::process::exit(1);
