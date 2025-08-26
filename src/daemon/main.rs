@@ -28,11 +28,11 @@ fn main() {
                             let response_with_newline = response + "\n";
                             let _ = stream.write_all(response_with_newline.as_bytes());
                         }
-                        Err(e) => eprintln!("Read error: {}", e),
+                        Err(e) => eprintln!("[{}] Read error: {}",get_time_hms(), e),
                     }
                 });
             }
-            Err(e) => eprintln!("Connection failed: {}", e),
+            Err(e) => eprintln!("[{}] Connection failed: {}",get_time_hms(), e),
         }
     }
         }
@@ -47,7 +47,8 @@ fn main() {
 }
 
 fn connection_established() -> String {
-    "Connection established sucessfully!".to_string()
+    println!("[{}] Client established a sucessfull connection.", get_time_hms());
+    return "Connection established sucessfully!".to_string();
 }
 
 fn function2() -> String {
