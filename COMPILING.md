@@ -13,17 +13,11 @@ git clone https://github.com/Delfi-CH/mc-server-management.git
 
 cd mc-server-management
 
-cargo run
+cargo build --bin daemon --release
+cargo build --bin cli --release
+cargo build --bin webapp-backend --release
+cargo build --bin install --release
+cargo build --bin update --release
 ```
 
-Or
-
-```
-git clone https://github.com/Delfi-CH/mc-server-management.git
-
-cd mc-server-management
-
-cargo build --release
-```
-
-if you want to build an executable
+You will get a executable in ./target/release.
