@@ -1,6 +1,49 @@
 # Compiling
 
-Since this software is written in Rust. and doesnt require OS-specific libaries, it can compile where you can compile Rust.
+## Additional Dependencies
+
+### Linux-only
+
+- OpenSSl Development libaries
+- pkg-config
+
+Install via Package-Manager:
+
+**Debian/Ubuntu**
+
+```bash
+    sudo apt update
+    sudo apt upgrade
+    sudo apt install pkg-config libssl-dev
+```
+
+**Fedora/RHEL**
+
+```bash
+    sudo dnf update
+    sudo dnf install pkgconf-pkg-config openssl-devel
+```
+**Arch Linux**
+
+```bash
+    sudo pacman -Syu pkgconf openssl
+```
+
+**Alpine Linux**
+
+```bash
+    sudo apk update
+    sudo apk upgrade
+    sudo apk add pkgconfig openssl-dev
+```
+
+**OpenSUSE**
+
+```bash
+    sudo zypper update
+    sudo zypper refresh
+    sudo zypper install pkg-config libopenssl-devel
+```
 
 ## Compiling with cargo
 

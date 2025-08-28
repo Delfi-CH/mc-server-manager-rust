@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -98,7 +99,7 @@ loop {
 
 println!("How do you want to obatin these packages?");
 println!("1 | Download [DEFAULT] (reccomended for most users.)");
-println!("2 | Compile locally (reccomended only for expert users, requires rustc/cargo, python3)");
+println!("2 | Compile locally (reccomended only for expert users, requires rustc/cargo, python3 and git)");
 
 let mut input2 = 0;
 
@@ -123,6 +124,10 @@ loop {
     } else if input == "2" {
         println!("Selecting compilation..");
         input2 = 2;
+        break;
+    } else if input == "" {
+        println!("Selecting download...");
+        input2 = 1;
         break;
     } else {
         println!("Not a valid input. Please try again.");
@@ -177,7 +182,7 @@ if input == "n" {
 }
 println!("Starting installation...");
 
-println!("Creating directoriies...");
+println!("Creating directories...");
 let mcsvman_dir = home_dir().map(|path| path.join(".mc-server-manager")).unwrap_or_else(|| {
     eprintln!("Error: Could not determine the home directory.");
     std::process::exit(1);
@@ -227,12 +232,11 @@ fn check_curl() -> bool {
 fn check_cc() -> bool {
 
     let py: bool = check_py();
-    let py3: bool = check_py3();
-    let rustc: bool = check_rustc();
+    let py3: bool = check_py3();;
     let cargo: bool = check_cargo();
     let git: bool = check_git();
 
-    if ((py || py3) && (rustc || cargo ) && git) == true {
+    if ((py || py3) && cargo && git) == true {
         return true;
     } else {
         return false;
@@ -273,13 +277,6 @@ fn check_py3() -> bool {
 }
 fn check_cargo() -> bool {
     Command::new("cargo")
-        .arg("--version")
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
-}
-fn check_rustc() -> bool {
-    Command::new("python")
         .arg("--version")
         .output()
         .map(|output| output.status.success())
@@ -372,6 +369,38 @@ Command::new("curl")
 }
 
 fn compile(input1: i32) {
+
+    #[cfg(target_os = "linux")] {
+        println!();
+        println!("WARNING!");
+        println!("Compiling REQUIRES:");
+        println!("- OpenSSL Development Libraries");
+        println!("- pkg-config");
+        println!();
+        println!("PLEASE CHECK FOR THESE BEFORE CONTINUING!");
+        println!("ADDITIONAL INFO CAN BE FOUND HERE: https://github.com/Delfi-CH/mc-server-manager-rust/blob/main/COMPILING.md");
+        loop {
+            println!("CONTINIUE? [Y/N]");
+            let mut input = String::new();
+
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Could not read the Input");
+
+            let input= input.to_lowercase();
+            let input = input.trim();
+
+            if input == "n" {
+                println!("Exiting Installer...");
+                return;
+            } else if input == "y" {
+                break;
+            } else {
+                println!("{} is not a valid Input", input);
+            }
+        }
+    }
+
     println!("Checking for compilers & tools");
 
     if check_cc() == true {
@@ -380,7 +409,7 @@ fn compile(input1: i32) {
         println!("Python 3 is not installed!");
         println!("Please install Python 3 from https://www.python.org/downloads/ and retry.");
         std::process::exit(2);
-    } else if !(check_cargo() || check_rustc()) {
+    } else if !(check_cargo()) {
         println!("Rust is not installed!");
         println!("Please install Rust from https://www.rust-lang.org/tools/install and retry.");
         std::process::exit(2);
@@ -468,29 +497,10 @@ fn compile(input1: i32) {
     mcsvdl_bin_name = "mcsvdl.exe";
     }
 
-    let pyinstall_build= Command::new("pyinstaller")
-    .args(&["--clean ", "--onefile", "main.py", "--name", mcsvdl_bin_name])
-    .current_dir(src_dir.join("mc-server-downloader-py"))
-    .output();
-
-    match pyinstall_build {
-        Ok(pyinstall_build) => {
-        if !pyinstall_build.status.success() {
-            eprintln!(
-                "pyinstaller failed with status: {}\nstdout: {}\nstderr: {}",
-                pyinstall_build.status,
-                String::from_utf8_lossy(&pyinstall_build.stdout),
-                String::from_utf8_lossy(&pyinstall_build.stderr)
-            );
-        } else {
-            println!("mcsvdl compiled sucessfully...");
-        }
+    match compile_mcsvdl(src_dir.join("mc-server-downloader-py"), mcsvdl_bin_name.to_string(), src_dir) {
+        Ok(_) => println!("Compiling of mcsvdl finished successfully..."),
+        Err(e) => eprintln!("Error while compiling mcsvdl: {}", e),
     }
-    Err(e) => {
-        eprintln!("Error while compiling mcsvdl: {}", e);
-    }
-    }
-
 }
 
 fn compile_rust(bintype: String, path: PathBuf) -> Result<(), Box<dyn std::error::Error>>  {
@@ -504,5 +514,159 @@ fn compile_rust(bintype: String, path: PathBuf) -> Result<(), Box<dyn std::error
     } else {
         let err_msg = String::from_utf8_lossy(&output.stderr);
         Err(format!("Build failed:\n{}", err_msg).into())
+    }
+}
+
+
+// TODO: Fix Pyinstall on Linux
+fn compile_mcsvdl(
+    path: PathBuf,
+    mcsvdl_bin_name: String,
+    src_dir: PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let python_cmd = if check_py() {
+        "python"
+    } else if check_py3() {
+        "python3"
+    } else {
+        eprintln!("Python 3 is not installed!\nPlease install Python 3 from https://www.python.org/downloads/ and retry.");
+        std::process::exit(2);
+    };
+
+    // Keep trying to install pyinstaller until successful
+    let pyinstall_path = loop {
+        let (installed, path) = check_pyinstall();
+        if installed {
+            break path;
+        }
+
+        match install_pyinstall(path.clone(), python_cmd.to_string()) {
+            Ok(_) => println!("Installation of pyinstaller completed successfully..."),
+            Err(e) => {
+                eprintln!("Error while installing pyinstaller: {}", e);
+                std::process::exit(2);
+            }
+        }
+    };
+
+    // Run pyinstaller build command
+    let pyinstall_build = Command::new(&pyinstall_path)
+        .args(&["--clean", "--onefile", "main.py", "--name", &mcsvdl_bin_name])
+        .current_dir(src_dir.join("mc-server-downloader-py"))
+        .output()?;
+
+    if !pyinstall_build.status.success() {
+        eprintln!(
+            "pyinstaller failed with status: {}\nstdout: {}\nstderr: {}",
+            pyinstall_build.status,
+            String::from_utf8_lossy(&pyinstall_build.stdout),
+            String::from_utf8_lossy(&pyinstall_build.stderr)
+        );
+        return Err("PyInstaller build failed".into());
+    }
+
+    Ok(())
+}
+
+
+fn install_pyinstall(path: String, python_cmd: String) -> Result<(), Box<dyn std::error::Error>> {
+    let install_pyinstall = Command::new(python_cmd)
+        .args(&["-m", "pip", "install", "--user", "pyinstaller"])
+        .current_dir(path)
+        .output()?;
+
+    if install_pyinstall.status.success() {
+        Ok(())
+    } else {
+        let err_msg = String::from_utf8_lossy(&install_pyinstall.stderr);
+        Err(format!("Could not install Pyinstaller:\n{}", err_msg).into())
+    }
+}
+
+fn get_newest_python_dir_win(path: PathBuf) -> io::Result<Option<String>> {
+    let mut max_version: Option<u32> = None;
+    let mut max_dir_name: Option<String> = None;
+
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if name.starts_with("Python3") {
+                    let suffix = &name["Python3".len()..];
+                    if let Ok(num) = suffix.parse::<u32>() {
+                        if max_version.map_or(true, |current_max| num > current_max) {
+                            max_version = Some(num);
+                            max_dir_name = Some(name.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(max_dir_name)
+}
+
+fn check_pyinstall() -> (bool, String) {
+    let mut pyinstall_path: PathBuf = Default::default();
+    #[cfg(unix)] {
+    pyinstall_path = home_dir()
+        .unwrap_or_else(|| PathBuf::from("/"))
+        .join(".local/bin/pyinstaller");
+}
+
+    #[cfg(windows)] {
+        let appdata = match env::var("AppData") {
+        Ok(val) => val,
+        Err(e) => {
+            eprintln!("Error: Could not read %AppData% environment variable: {}", e);
+            std::process::exit(2);
+            }
+        };
+
+        pyinstall_path = PathBuf::from(appdata);
+        pyinstall_path.push("Python");
+        let pydir_win = match get_newest_python_dir_win(pyinstall_path.clone()) {
+            Ok(Some(dir)) => Some(dir),
+            Ok(None) => {
+                eprintln!("No Python directory found at {}", pyinstall_path.clone().display());
+                None
+            }
+            Err(e) => {
+                eprintln!("Could not check Dir {}: {}", pyinstall_path.clone().display(), e);
+                None
+            }
+        };
+        match pydir_win {
+            None => {
+                eprintln!("Dir is empty!");
+                std::process::exit(2);
+            },
+            Some(dir) => {
+                pyinstall_path.push(dir);
+        },
+        }
+
+        pyinstall_path.push("Scripts");
+        pyinstall_path.push("pyinstaller.exe");
+    }
+    
+    println!("{}", pyinstall_path.display());
+    let pyinstall_check = match Command::new(pyinstall_path.clone()).arg("-v").output() {
+        Ok(output) => output,
+        Err(e) => {
+            eprintln!("Failed to execute Pyinstaller: {}", e);
+            return (false, pyinstall_path.clone().display().to_string());
+        }
+    };
+
+    if pyinstall_check.status.success() {
+        (true, pyinstall_path.clone().display().to_string())
+    } else {
+        let err_msg = String::from_utf8_lossy(&pyinstall_check.stderr);
+        eprintln!("Could not run Pyinstaller:\n{}", err_msg);
+        (false, pyinstall_path.clone().display().to_string())
     }
 }
