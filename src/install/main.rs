@@ -497,10 +497,11 @@ fn compile(input1: i32) {
     mcsvdl_bin_name = "mcsvdl.exe";
     }
 
-    match compile_mcsvdl(src_dir.join("mc-server-downloader-py"), mcsvdl_bin_name.to_string(), src_dir) {
+    match compile_mcsvdl(src_dir) {
         Ok(_) => println!("Compiling of mcsvdl finished successfully..."),
         Err(e) => eprintln!("Error while compiling mcsvdl: {}", e),
     }
+    
 }
 
 fn compile_rust(bintype: String, path: PathBuf) -> Result<(), Box<dyn std::error::Error>>  {
@@ -517,156 +518,30 @@ fn compile_rust(bintype: String, path: PathBuf) -> Result<(), Box<dyn std::error
     }
 }
 
+fn compile_mcsvdl(src_dir: PathBuf) -> Result<(), Box<dyn std::error::Error>>  {
+    #[cfg(unix)] {
+    let output = Command::new("bash")
+    .arg(src_dir.join("mc-server-downloader-py").join("build.sh"))
+    .current_dir(src_dir.join("mc-server-downloader-py"))
+    .output()?;
 
-// TODO: Fix Pyinstall on Linux
-fn compile_mcsvdl(
-    path: PathBuf,
-    mcsvdl_bin_name: String,
-    src_dir: PathBuf,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let python_cmd = if check_py() {
-        "python"
-    } else if check_py3() {
-        "python3"
-    } else {
-        eprintln!("Python 3 is not installed!\nPlease install Python 3 from https://www.python.org/downloads/ and retry.");
-        std::process::exit(2);
-    };
-
-    // Keep trying to install pyinstaller until successful
-    let pyinstall_path = loop {
-        let (installed, path) = check_pyinstall();
-        if installed {
-            break path;
-        }
-
-        match install_pyinstall(path.clone(), python_cmd.to_string()) {
-            Ok(_) => println!("Installation of pyinstaller completed successfully..."),
-            Err(e) => {
-                eprintln!("Error while installing pyinstaller: {}", e);
-                std::process::exit(2);
-            }
-        }
-    };
-
-    // Run pyinstaller build command
-    let pyinstall_build = Command::new(&pyinstall_path)
-        .args(&["--clean", "--onefile", "main.py", "--name", &mcsvdl_bin_name])
-        .current_dir(src_dir.join("mc-server-downloader-py"))
-        .output()?;
-
-    if !pyinstall_build.status.success() {
-        eprintln!(
-            "pyinstaller failed with status: {}\nstdout: {}\nstderr: {}",
-            pyinstall_build.status,
-            String::from_utf8_lossy(&pyinstall_build.stdout),
-            String::from_utf8_lossy(&pyinstall_build.stderr)
-        );
-        return Err("PyInstaller build failed".into());
-    }
-
-    Ok(())
-}
-
-
-fn install_pyinstall(path: String, python_cmd: String) -> Result<(), Box<dyn std::error::Error>> {
-    let install_pyinstall = Command::new(python_cmd)
-        .args(&["-m", "pip", "install", "--user", "pyinstaller"])
-        .current_dir(path)
-        .output()?;
-
-    if install_pyinstall.status.success() {
+    if output.status.success() {
         Ok(())
     } else {
-        let err_msg = String::from_utf8_lossy(&install_pyinstall.stderr);
-        Err(format!("Could not install Pyinstaller:\n{}", err_msg).into())
+        let err_msg = String::from_utf8_lossy(&output.stderr);
+        Err(format!("Build failed:\n{}", err_msg).into())
     }
-}
-
-fn get_newest_python_dir_win(path: PathBuf) -> io::Result<Option<String>> {
-    let mut max_version: Option<u32> = None;
-    let mut max_dir_name: Option<String> = None;
-
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_dir() {
-            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                if name.starts_with("Python3") {
-                    let suffix = &name["Python3".len()..];
-                    if let Ok(num) = suffix.parse::<u32>() {
-                        if max_version.map_or(true, |current_max| num > current_max) {
-                            max_version = Some(num);
-                            max_dir_name = Some(name.to_string());
-                        }
-                    }
-                }
-            }
-        }
     }
-
-    Ok(max_dir_name)
-}
-
-fn check_pyinstall() -> (bool, String) {
-    let mut pyinstall_path: PathBuf = Default::default();
-    #[cfg(unix)] {
-    pyinstall_path = home_dir()
-        .unwrap_or_else(|| PathBuf::from("/"))
-        .join(".local/bin/pyinstaller");
-}
-
     #[cfg(windows)] {
-        let appdata = match env::var("AppData") {
-        Ok(val) => val,
-        Err(e) => {
-            eprintln!("Error: Could not read %AppData% environment variable: {}", e);
-            std::process::exit(2);
-            }
-        };
+    let output = Command::new(src_dir.join("mc-server-downloader-py").join("build.bat"))
+    .current_dir(src_dir.join("mc-server-downloader-py"))
+    .output()?;
 
-        pyinstall_path = PathBuf::from(appdata);
-        pyinstall_path.push("Python");
-        let pydir_win = match get_newest_python_dir_win(pyinstall_path.clone()) {
-            Ok(Some(dir)) => Some(dir),
-            Ok(None) => {
-                eprintln!("No Python directory found at {}", pyinstall_path.clone().display());
-                None
-            }
-            Err(e) => {
-                eprintln!("Could not check Dir {}: {}", pyinstall_path.clone().display(), e);
-                None
-            }
-        };
-        match pydir_win {
-            None => {
-                eprintln!("Dir is empty!");
-                std::process::exit(2);
-            },
-            Some(dir) => {
-                pyinstall_path.push(dir);
-        },
-        }
-
-        pyinstall_path.push("Scripts");
-        pyinstall_path.push("pyinstaller.exe");
-    }
-    
-    println!("{}", pyinstall_path.display());
-    let pyinstall_check = match Command::new(pyinstall_path.clone()).arg("-v").output() {
-        Ok(output) => output,
-        Err(e) => {
-            eprintln!("Failed to execute Pyinstaller: {}", e);
-            return (false, pyinstall_path.clone().display().to_string());
-        }
-    };
-
-    if pyinstall_check.status.success() {
-        (true, pyinstall_path.clone().display().to_string())
+    if output.status.success() {
+        Ok(())
     } else {
-        let err_msg = String::from_utf8_lossy(&pyinstall_check.stderr);
-        eprintln!("Could not run Pyinstaller:\n{}", err_msg);
-        (false, pyinstall_path.clone().display().to_string())
+        let err_msg = String::from_utf8_lossy(&output.stderr);
+        Err(format!("Build failed:\n{}", err_msg).into())
+    }
     }
 }
