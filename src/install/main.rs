@@ -261,7 +261,7 @@ fn check_py() -> bool {
             }
         }
         Err(e) => {
-            eprintln!("Failed to execute Python: {}", e);
+            eprintln!("     WARN: Failed to execute Python: {}", e);
             false
         }
     }
@@ -465,30 +465,6 @@ fn compile(input1: i32) {
     match compile_rust("daemon".to_string(), src_dir.join("mc-server-manager-rust")) {
         Ok(_) => println!("Compiling of Daemon finished successfully..."),
         Err(e) => eprintln!("Error while compiling Daemon: {}", e),
-    }
-    println!("Preparing mcsvdl...");
-
-    let pip_install= Command::new("pip")
-    .args(&["install", "-r", "requirements.txt"])
-    .current_dir(src_dir.join("mc-server-downloader-py"))
-    .output();
-
-    match pip_install {
-        Ok(pip_install) => {
-        if !pip_install.status.success() {
-            eprintln!(
-                "pip install failed with status: {}\nstdout: {}\nstderr: {}",
-                pip_install.status,
-                String::from_utf8_lossy(&pip_install.stdout),
-                String::from_utf8_lossy(&pip_install.stderr)
-            );
-        } else {
-            println!("Requirements installed successfully...");
-        }
-    }
-    Err(e) => {
-        eprintln!("Error while installing requirements: {}", e);
-    }
     }
     println!("Compiling mcsvdl...");
 
