@@ -261,7 +261,8 @@ fn check_py() -> bool {
             }
         }
         Err(e) => {
-            eprintln!("     WARN: Failed to execute Python: {}", e);
+            eprintln!("WARN: Failed to execute Python: {}", e);
+            eprintln!("This message can be ignored on most Linux Distros");
             false
         }
     }
@@ -453,6 +454,7 @@ fn compile(input1: i32) {
         Ok(_) => println!("Compiling of Webapp-Backend finished successfully..."),
         Err(e) => eprintln!("Error while compiling Webapp-Backend: {}", e),
     }
+    copy_rust_bin("webapp-backend".to_string(), src_dir.join("mc-server-manager-rust"));
     } 
     if input1 == 2 || input1 == 3 {
         println!("Compiling Command-Line App...");
@@ -460,12 +462,15 @@ fn compile(input1: i32) {
         Ok(_) => println!("Compiling of Command-Line App finished successfully..."),
         Err(e) => eprintln!("Error while compiling Command-Line App: {}", e),
     
-    }}
+    }
+    copy_rust_bin("cli".to_string(), src_dir.join("mc-server-manager-rust"));
+    }
     println!("Compiling daemon...");
     match compile_rust("daemon".to_string(), src_dir.join("mc-server-manager-rust")) {
         Ok(_) => println!("Compiling of Daemon finished successfully..."),
         Err(e) => eprintln!("Error while compiling Daemon: {}", e),
     }
+    copy_rust_bin("daemon".to_string(), src_dir.join("mc-server-manager-rust"));
     println!("Compiling mcsvdl...");
 
     let mut mcsvdl_bin_name = "mcsvdl";
@@ -473,10 +478,11 @@ fn compile(input1: i32) {
     mcsvdl_bin_name = "mcsvdl.exe";
     }
 
-    match compile_mcsvdl(src_dir) {
+    match compile_mcsvdl(src_dir.clone()) {
         Ok(_) => println!("Compiling of mcsvdl finished successfully..."),
         Err(e) => eprintln!("Error while compiling mcsvdl: {}", e),
     }
+    copy_mcsvdl(src_dir.clone());
     
 }
 
@@ -491,6 +497,41 @@ fn compile_rust(bintype: String, path: PathBuf) -> Result<(), Box<dyn std::error
     } else {
         let err_msg = String::from_utf8_lossy(&output.stderr);
         Err(format!("Build failed:\n{}", err_msg).into())
+    }
+}
+
+fn copy_rust_bin(mut bintype: String, path: PathBuf)  {
+    #[cfg(windows)] {
+        bintype = bintype + ".exe";
+    }
+    let src_binpath: PathBuf = path.join("target").join("release").join(&bintype);
+    let target_binpath: PathBuf = get_dotpath().join("bin").join(&bintype);
+    match fs::copy(&src_binpath, &target_binpath) {
+        Ok(_) => {
+            println!("Sucessfully copied {} to {}", bintype, &target_binpath.display());
+        }
+        Err(e) => {
+            eprintln!("Could not copy file from {} to {} : {}", src_binpath.display(), target_binpath.display(), e)
+        }
+    }
+}
+
+fn copy_mcsvdl(src_dir: PathBuf) {
+
+    let mut mcsvdl_bin_name: String = "mcsvdl".to_string();
+    #[cfg(windows)] {
+        mcsvdl_bin_name = mcsvdl_bin_name + ".exe";
+    }
+
+    let src_path: PathBuf = src_dir.join("mc-server-downloader-py").join("dist").join(&mcsvdl_bin_name);
+    let target_binpath: PathBuf = get_dotpath().join("bin").join(&mcsvdl_bin_name);
+    match fs::copy(&src_path, &target_binpath) {
+        Ok(_) => {
+            println!("Sucessfully copied {} to {}", &mcsvdl_bin_name, &target_binpath.display());
+        }
+        Err(e) => {
+            eprintln!("Could not copy file from {} to {} : {}", src_path.display(), target_binpath.display(), e)
+        }
     }
 }
 
