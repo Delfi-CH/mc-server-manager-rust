@@ -115,7 +115,7 @@ impl Default for Servers {
 
 // Consts
 
-pub const DAEMON_ADDR: &str = "127.0.0.1:29900";
+pub const DAEMON_ADDR: &str = "127.0.0.1:29901";
 
 // Sanity Check
 
