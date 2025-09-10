@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Imports
 use std::path::PathBuf;
 use std::fs;
