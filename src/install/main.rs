@@ -149,6 +149,7 @@ if input1 == 1 {
     println!("Please restart the Installer.");
     return;
 }
+println!("- Background-Service");
 println!("---------------");
 println!("Configuration:");
 if input1 == 1 || input1 == 3 {
