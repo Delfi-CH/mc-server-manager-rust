@@ -37,7 +37,7 @@ Recommended: 8 Gigabytes and more.
 ### Operating Systems
 
 **Only Windows and popular Linux Distributions are supported and have downloadable exectuables.**
-**However: Compiling on the BSD variants and MacOS should be possible but is not supported.**
+**However: Compiling on smaller Linux Distributions, the BSD variants and MacOS should be possible but is neither extensivly tested nor supported.**
 
 **Beta/Testing/Unstable Versions of any Operating System are not supported.**
 
@@ -60,9 +60,9 @@ Recommended: 8 Gigabytes and more.
 
 #### **Other Linux Distributions:**
 
-- Alpine Linux
-- Arch Linux
-- openSUSE Tumbleweed
+- Alpine Linux (latest)
+- Arch Linux (latest packages)
+- openSUSE Tumbleweed (latest packages)
 - openSUSE Leap 15 or higher.
 
 ### Java:
@@ -158,6 +158,67 @@ This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc
 
 This App uses [delfi-ch/mc-server-downloader-py:](https://github.com/Delfi-CH/mc-server-downloader-py) to download the server.jar files, which is automaticly downloaded on startup.
 
+### (UNOFFICIAL) Other Operating Systems:
+
+#### Downloading and Installing Java
+
+**Small Linux Distributions:**
+
+Check your Package-Manager or download the Tarball from the official JDK website: [https://jdk.java.net/](https://jdk.java.net/).
+
+**BSD**
+
+Check your Pakage-Manager.
+
+**MacOS**
+
+**Quoted from [Installation of the JDK on macOS](https://docs.oracle.com/en/java/javase/21/install/installation-jdk-macos.html#GUID-F575EB4A-70D3-4AB4-A20E-DBE95171AB5F) by Oracle**
+
+---
+
+**Download the JDK**
+
+Choose the appropriate file for your system from the official [JDK download page](https://www.oracle.com/java/technologies/javase-downloads.html):
+
+- **macOS x64 systems**:  
+  - `jdk-<FEATURE>_macos-x64_bin.dmg`  
+  - `jdk-<FEATURE>_macos-x64_bin.tar.gz`
+
+- **macOS aarch64 (Apple Silicon, 64-bit ARM)**:  
+  - `jdk-<FEATURE>_macos-aarch64_bin.dmg`  
+  - `jdk-<FEATURE>_macos-aarch64_bin.tar.gz`
+
+Click **Accept License Agreement** before downloading.
+
+**2. Install the JDK**
+
+**Using `.dmg` file**
+
+1. From your browser's Downloads window or from Finder, **double-click** the `.dmg` file.
+2. A Finder window will open showing an icon of an open box with the name `JDK <VERSION>.pkg`.
+3. **Double-click** the `JDK <VERSION>.pkg` icon to start the installation.
+
+**Installation Steps**
+
+1. The **Introduction** window appears.  
+   Click **Continue**.
+
+2. The **Installation Type** window appears.  
+   Click **Install**.
+
+3. A window prompts:  
+   > *Installer is trying to install new software. Enter your password to allow this.*
+
+   Enter your **Administrator username and password**, then click **Install Software**.
+
+4. The JDK will be installed, and a **confirmation window** will be displayed.
+
+**3. Post-Installation**
+
+- After the installation is complete, you may **delete the `.dmg` or `.tar.gz` file** to free up disk space.
+
+---
+
 ## Minecraft Support
 
 ### Game Versions
@@ -220,13 +281,13 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
   - NeoForge is a fork of Forge, developed by most of the Team behind Forge. It aims for better features for Mod-Developers and only supports newer Versions of Minecraft.
   - Supports: Minecraft 1.20.2 - 1.21.6
 - Fabric
-  - Fabric is a open-source Modloader. It is more lightweight and modular than Forge and supports many more recent versions of the Game.
+  - Fabric is a open-source Modloader. It is more lightweight and modular than Forge but only supports more recent versions of the Game.
   - Supports: Minecraft 1.14.4 - 1.21.6
 - PaperMC
   - Paper is a modified Server-Software which aims to improve Performance and introduces a Plugin API. It is compatible with most Versions of the game and doesnt require a modified Client.
   - Supports: Minecraft 1.9.4 - 1.21.5
 - Folia
-  - Folia is a fork of Paper, developed by mostly the same Team behind Paper, which adds Multithreading for improved Performance.
+  - Folia is a fork of Paper, developed by the same Team behind Paper, which adds Multithreading for improved Performance.
   - Supports: Minecraft 1.19.4 - 1.21.6
 
 Note that Versions labled "April Fools" cannot be run with any modloaders.
@@ -250,6 +311,7 @@ See [here](https://github.com/Delfi-CH/mc-server-management/blob/main/COMPILING.
 ## Legal
 
 Minecraft is a trademark of Mojang AB / Microsoft.
+
 NOT AN OFFICIAL MINECRAFT SOFTWARE. NOT APPROVED BY OR ASSOCIATED WITH MOJANG AB OR MICROSOFT.
 
 This program is licensed under the terms of the GNU General Public License Version 3 (GPLv3).
