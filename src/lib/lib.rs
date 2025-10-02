@@ -273,9 +273,9 @@ pub fn get_os_details() -> String {
             .get("NAME")
             .map_or("Unknown Distribution", |v| v.as_str());
 
-        let os_ver = os_release_file
+        os_ver = os_release_file
             .get("VERSION")
-            .map_or("Unknown Version", |v| v.as_str());
+            .map_or("Unknown Version", |v| v.as_str()).to_string();
 
         let linux_dist = format!("{} {}", dist_name, os_ver);
         return os_type + unix_subtype + ", " + &linux_dist;
