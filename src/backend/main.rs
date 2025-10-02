@@ -8,6 +8,7 @@ async fn main() -> std::io::Result<()> {
             .service(hello)
             .service(echo)
             .route("/hey", web::get().to(manual_hello))
+            .default_service(web::to(error404))
     })
     .bind((BACKEND_ADDR, BACKEND_PORT))?
     .run()
@@ -16,7 +17,7 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+    HttpResponse::Ok().body("Hello world!") 
 }
 
 #[post("/echo")]
@@ -26,4 +27,10 @@ async fn echo(req_body: String) -> impl Responder {
 
 async fn manual_hello() -> impl Responder {
     HttpResponse::Ok().body("Hey there!")
+}
+
+async fn error404() -> impl Responder {
+    HttpResponse::NotFound()
+        .content_type("text/html; charset=utf-8")
+        .body("<h1>404: Page not found!</h1>")
 }
