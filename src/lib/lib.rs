@@ -20,7 +20,7 @@ use winver::*;
 // Structs for config.toml
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Config {
+pub struct Config {
     title: String,
     #[serde(default)]
     system: System,
@@ -33,7 +33,7 @@ struct Config {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct System {
+pub struct System {
     #[serde(default)]
     os_type: String,
     #[serde(default)]
@@ -65,7 +65,7 @@ impl Default for System {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct McsvdlInfo {
+pub struct McsvdlInfo {
     #[serde(default)]
     has_mcsvdl: bool,
     #[serde(default)]
@@ -85,7 +85,7 @@ impl Default for McsvdlInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Storage {
+pub struct Storage {
     #[serde(default)]
     use_default_server_dir: bool,
     #[serde(default)]
@@ -102,7 +102,7 @@ impl Default for Storage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Servers {
+pub struct Servers {
     #[serde(default)]
     server_list: IndexMap<String, String>,
 }
@@ -117,7 +117,9 @@ impl Default for Servers {
 
 // Consts
 
-pub const DAEMON_ADDR: &str = "127.0.0.1:29901";
+pub const DAEMON_ADDR: &str = "127.0.0.1:29902";
+pub const BACKEND_ADDR: &str = "127.0.0.1";
+pub const BACKEND_PORT: u16 = 29901;
 
 // Sanity Check
 

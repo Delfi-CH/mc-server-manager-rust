@@ -57,8 +57,8 @@ fn main() {
 let mut port: u32=29900;
 if input1 == 1 || input1 == 3 {
 println!();
-println!("Select a Port for the WebApp");
-println!("[DEFAULT]: 29900");
+println!("Select a Port for the WebApp-Backend");
+println!("[DEFAULT]: 29901");
 
 loop {
     print!("->| ");
@@ -81,6 +81,8 @@ loop {
             if port_input_u32 <= 1024 {
                 println!("Cannot bind to Ports 1-1024. Please try again.");
             } else if port_input_u32 == 29001 {
+                println!("Port 29001 is already in use for backend Services. Please try again.");
+            } else if port_input_u32 == 29002 {
                 println!("Port 29001 is already in use for backend Services. Please try again.");
             } else if port_input_u32 > 65535 {
                 println!("Port can't be bigger than 65535. Please try again.");

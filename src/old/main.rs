@@ -1526,7 +1526,7 @@ fn download_server() {
             props_path = win_path_cleaner(&dir_path).to_string() + "\\server.properties";
         }
         #[cfg(target_os = "linux")] {
-            props_path = &dir_path.to_string() + "/server.properties";
+            props_path = dir_path.to_string() + "/server.properties";
         }
 
         println!("{}", props_path);

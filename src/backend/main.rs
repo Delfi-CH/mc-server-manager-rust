@@ -1,4 +1,5 @@
 use actix_web::*;
+use app_lib::*;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -8,7 +9,7 @@ async fn main() -> std::io::Result<()> {
             .service(echo)
             .route("/hey", web::get().to(manual_hello))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((BACKEND_ADDR, BACKEND_PORT))?
     .run()
     .await
 }
