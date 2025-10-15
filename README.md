@@ -48,7 +48,7 @@ Recommended: 8 Gigabytes and more.
 #### Linux: 
 
 #### **Debian-based:**
-- Ubuntu 24.04 LTS or Ubuntu 25.04 or later
+- Ubuntu 24.04 LTS or Ubuntu 25.10 or later
 - Debian 13 or higher
 
 
@@ -63,7 +63,7 @@ Recommended: 8 Gigabytes and more.
 - Alpine Linux (latest)
 - Arch Linux (latest packages)
 - openSUSE Tumbleweed (latest packages)
-- openSUSE Leap 15 or higher.
+- openSUSE Leap 16 or higher.
 
 ### Java:
 
@@ -226,6 +226,10 @@ Click **Accept License Agreement** before downloading.
 ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 
 - Version 1.21.x
+    - 1.21.10
+    - 1.21.9
+    - 1.21.8
+    - 1.21.7
     - 1.21.6
     - 1.21.5
     - 25w14craftmine (April Fools)
@@ -276,21 +280,21 @@ ONLY MINECRAFT: JAVA EDITION IS SUPPORTED!
 
 - Forge:
   - Forge is a open-source Minecraft Modding API and Modloader. It has existed for a long time and is compatible with most Minecraft versions. 
-  - Supports: Minecraft 1.7.10 - 1.21.6
+  - Supports: Minecraft 1.7.10 - 1.21.10
 - NeoForge:
   - NeoForge is a fork of Forge, developed by most of the Team behind Forge. It aims for better features for Mod-Developers and only supports newer Versions of Minecraft.
-  - Supports: Minecraft 1.20.2 - 1.21.6
+  - Supports: Minecraft 1.20.2 - 1.21.10
 - Fabric
   - Fabric is a open-source Modloader. It is more lightweight and modular than Forge but only supports more recent versions of the Game.
-  - Supports: Minecraft 1.14.4 - 1.21.6
+  - Supports: Minecraft 1.14.4 - 1.21.10
 - PaperMC
   - Paper is a modified Server-Software which aims to improve Performance and introduces a Plugin API. It is compatible with most Versions of the game and doesnt require a modified Client.
-  - Supports: Minecraft 1.9.4 - 1.21.5
+  - Supports: Minecraft 1.9.4 - 1.21.8
 - Folia
   - Folia is a fork of Paper, developed by the same Team behind Paper, which adds Multithreading for improved Performance.
-  - Supports: Minecraft 1.19.4 - 1.21.6
+  - Supports: Minecraft 1.19.4 - 1.21.8
 
-Note that Versions labled "April Fools" cannot be run with any modloaders.
+Note that Versions labled "April Fools" cannot be run with ANY modloaders.
 ## Configuration
 
 The software uses a [TOML (Tom's Obvious Minimal Language)](https://toml.io/) file, located at
