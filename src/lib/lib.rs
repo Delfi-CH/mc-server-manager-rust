@@ -434,6 +434,12 @@ pub fn create_config() {
                 .write_all("server_list = {}\n".as_bytes())
                 .expect("Could not write to file");
 }
+
+// server.toml stuff
+
+fn check_for_server_toml() {
+    
+}
  
 // Time and stuff
 

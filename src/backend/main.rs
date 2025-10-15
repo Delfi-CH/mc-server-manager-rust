@@ -1,5 +1,11 @@
-use actix_web::*;
+use actix_web::{web::Json, *};
+use serde::*;
 use app_lib::*;
+
+#[derive(Serialize)]
+struct ConnectionObject {
+    ok: bool,
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -7,6 +13,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(hello)
             .service(echo)
+            .service(get_connection)
             .route("/hey", web::get().to(manual_hello))
             .default_service(web::to(error404))
     })
@@ -17,7 +24,25 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!") 
+    let daemon = establish_connection();
+    let mut body = String::new();
+    body = "Hello world!".to_string();
+    if daemon == false {
+        body = "No Connection to daemon!".to_string();
+    }
+    HttpResponse::Ok().body(body) 
+}
+
+#[get("/connection")]
+async fn get_connection() -> impl Responder {
+    let daemon_connected = establish_connection();
+
+    // Assuming establish_connection() returns a bool
+    let response = ConnectionObject {
+        ok: daemon_connected,
+    };
+
+    web::Json(response)
 }
 
 #[post("/echo")]
