@@ -1,4 +1,4 @@
-use actix_web::{web::Json, *};
+use actix_web::*;
 use serde::*;
 use app_lib::*;
 
@@ -36,8 +36,6 @@ async fn hello() -> impl Responder {
 #[get("/connection")]
 async fn get_connection() -> impl Responder {
     let daemon_connected = establish_connection();
-
-    // Assuming establish_connection() returns a bool
     let response = ConnectionObject {
         ok: daemon_connected,
     };
