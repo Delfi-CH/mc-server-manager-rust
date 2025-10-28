@@ -23,6 +23,9 @@ props-rs = "0.1.1"
 chrono = "0.4.41"
 git2 = "0.20.2"
 actix-web = "4"
+sha2 = "0.10"
+hex = "0.4"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61.3", features = ["Win32_System_SystemInformation"] }
 winver = "1.0.0"
