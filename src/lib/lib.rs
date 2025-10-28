@@ -473,6 +473,15 @@ pub fn create_config() {
                 .write_all(format!("data_path = '{}'\n", get_dotpath().join("data").display()).as_bytes())
                 .expect("Could not write to file");
             cfg_file
+                .write_all("java_8_path = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("java_17_path = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
+                .write_all("java_21_path = \"none\"\n".as_bytes())
+                .expect("Could not write to file");
+            cfg_file
                 .write_all("[mcsvdl]\n".as_bytes())
                 .expect("Could not write to file");
             #[cfg(unix)]
