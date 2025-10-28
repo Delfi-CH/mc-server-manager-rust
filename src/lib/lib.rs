@@ -48,6 +48,12 @@ pub struct System {
     bin_path: String,
     #[serde(default)]
     data_path: String,
+    #[serde(default)]
+    java_8_path: String,
+    #[serde(default)]
+    java_17_path: String,
+    #[serde(default)]
+    java_21_path: String,
 }
 
 impl Default for System {
@@ -60,6 +66,9 @@ impl Default for System {
             app_path: String::new(),
             bin_path: String::new(),
             data_path: String::new(),
+            java_8_path: String::new(),
+            java_17_path: String::new(),
+            java_21_path: String::new(),
         }
     }
 }
@@ -329,6 +338,62 @@ pub fn get_os_details() -> String {
     }
     return os_type + &os_ver + ", Build " + &win_build;
 }
+}
+
+// Parsing JVM Info
+
+pub fn check_java_version(javapath: String, java_version: u32) -> bool {
+    if get_java_version(javapath) == java_version {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+fn get_java_version(javapath: String) -> u32 {
+    let output = Command::new(&javapath)
+        .arg("-version")
+        .output();
+
+    match output {
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let ver_string =  stderr.lines().find(|line| line.contains("version"));
+
+            match ver_string {
+                Some(ver_string) => {
+
+                    let ver_num = ver_string.split('"').nth(1);
+
+                    match ver_num {
+                        Some(ver_num) => {
+                            if ver_num.starts_with("1.") {
+                                let returnval = ver_num[2..3].parse::<u32>().unwrap_or(0);
+                                return returnval;
+                            } else {
+                                let returnval = ver_num.split(".").next().unwrap_or("0").parse::<u32>().unwrap_or(0);
+                                return returnval;
+                            }
+
+                        }
+                        None => {
+                            eprintln!("Could not parse the Java Version String.");
+                        }
+                    }
+                }
+                None  => {
+                    eprintln!("Could not find String `version` from running {} -version", javapath);
+                    return 0;
+                }
+            }
+            return 0;
+        }
+        Err(e) => {
+            eprintln!("Could not run {} -version: {}", javapath, e);
+            return 0;
+        }
+    }
+
 }
 
 // Reading Config
