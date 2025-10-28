@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::process::Command;
 use std::net::TcpStream;
 use std::collections::HashMap;
@@ -12,6 +12,9 @@ use dir::home_dir;
 use chrono::Local;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
+use reqwest::blocking::get;
+use sha2::{Digest, Sha256};
+
 #[cfg(windows)]
 use winver::*;
 
@@ -122,6 +125,24 @@ impl Default for Servers {
             server_list: IndexMap::new(),
         }
     }
+}
+
+// Structs for JDK-Downloader
+
+#[derive(Debug, Deserialize)]
+struct Asset {
+    binary: Binary,
+}
+
+#[derive(Debug, Deserialize)]
+struct Binary {
+    package: Package,
+}
+
+#[derive(Debug, Deserialize)]
+struct Package {
+    link: String,
+    checksum: String,
 }
 
 // Consts
@@ -340,7 +361,7 @@ pub fn get_os_details() -> String {
 }
 }
 
-// Parsing JVM Info
+// JVM Info Parser
 
 pub fn check_java_version(javapath: String, java_version: u32) -> bool {
     if get_java_version(javapath) == java_version {
@@ -556,6 +577,13 @@ pub fn establish_connection() -> bool {
             return false;
         }
     }
+}
+
+//JVM Downloader
+
+pub fn download_jdk(os: String, version: u32, archive_type: String) {
+    let url = format!("https://api.azul.com/metadata/v1/zulu/packages/?java_version={}&os={}&arch=x64&archive_type={}&java_package_type=jdk&distro_version={}&release_status=ga&availability_types=CA&certifications=tck&page=1&page_size=100", version, os, archive_type, version);
+    println!("{}", url);
 }
 
 

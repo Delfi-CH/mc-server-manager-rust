@@ -5,6 +5,19 @@ use app_lib::*;
 fn main() {
     init();
     println!("Hello World! CLI bin running.");
+
+    //debug only
+    download_jdk("linux".to_owned(), 8, "tar.gz".to_owned());
+    println!();
+    download_jdk("linux".to_owned(), 17, "tar.gz".to_owned());
+    println!();
+    download_jdk("linux".to_owned(), 21, "tar.gz".to_owned());
+    println!();
+    download_jdk("windows".to_owned(), 8, "zip".to_owned());
+    println!();
+    download_jdk("windows".to_owned(), 17, "zip".to_owned());
+    println!();
+    download_jdk("windows".to_owned(), 21, "zip".to_owned());
 }
 
 fn init() {
